@@ -1,0 +1,148 @@
+{% extends 'main.html' %}
+{% load index_dict %}
+
+{% block content %}
+    <script>
+        function editFunction(id,type) {
+            document.getElementById("edit-form_" + type + id).style.display = "inline"
+            document.getElementById('go-back_'+ type + id).style.display = 'inline'
+            document.getElementById("original-edit-button_" + type + id).style.display = "none"
+            document.getElementById("content-original_" + type + id).style.display = "none"
+        }
+        function gobackfromedit(id, type) {
+            document.getElementById("edit-form_" + type + id).style.display = "none"
+            document.getElementById('go-back_'+ type + id).style.display = 'none'
+            document.getElementById("original-edit-button_" + type + id).style.display = "inline"
+            document.getElementById("content-original_" + type + id).style.display = "block"
+        }
+    </script>
+    <style>
+        .displayNone {
+            display: none;
+        }
+        .reactions {
+            display: inline;
+        }
+        .react-button {
+            width: 50px;
+            height: 50px;
+            background-size: contain;
+        }
+    </style>
+    <div id="post_content">
+
+        <hr>
+<h1>{{post.name}}</h1>
+<a href="{% url 'user-profile' post.user.id%}">{{post.user}}</a>
+{% autoescape off %}
+    {% for badge in post_badges %}
+        {{badge.html}}
+    {% endfor %}
+{% endautoescape %}
+{% if post.is_locked %}
+    <p>This post is locked</p>
+{% endif %}
+{% if post.is_deleted %}
+<p>Post is delted by {{post.deleted_by}}</p>
+{% endif %}
+<p>{{post.created}}</p>
+<div id="post_changeble">
+    <p>{{post.updated}}</p>
+    <p id="content-original_p{{post.id}}" >{{post.content}}</p>
+</div>
+{% if canUserDeletePost and post.is_deleted == False %}
+    <button hx-post="{% url 'delete-post' post.id %}">Delete post</button>
+{% endif %}
+{% if canUserMoveThreads %}
+	<button hx-get="{% url 'get-topics' post.id %}" hx-target="#move_thread_options">Move Thread</button>
+	<div id="move_thread_options">
+		
+	</div>
+{% endif %}
+{% if canUserEditPost %}
+    <!-- Form for when the user decided to edit -->
+    <form class="displayNone" id="edit-form_p{{post.id}}" method="POST" action="{% url 'edit-content' post.id 'post' %}">
+        {% csrf_token %}
+        <input id="comment-editor_p{{post.id}}" type="text" name="editcontent" placeholder="Write your message here" value="{{post.content}}">
+        <input type="submit" onclick="gobackfromedit({{post.id}}, 'p')">
+
+        <button id="go-back_p{{post.id}}" onclick="gobackfromedit({{post.id}}, 'p')">Go back</button>
+    </form>
+    <!-- Edit button original -->
+    <button id="original-edit-button_p{{post.id}}" onclick="editFunction({{post.id}}, 'p')">Edit post</button>
+{% endif %}
+{% if canUserLockPost %}
+    <button hx-post="{% url 'lock-post' post.id %}">Lock Post</button>
+{% elif canUserUnlockPost %}
+    <button hx-post="{% url 'unlock-post' post.id %}">Unlock Post</button>
+{% endif %}
+{% if canUserSeeEditHistoryPosts %}
+    <button hx-get="{% url 'edit-history' post.id 'post' %}" hx-target="#post_history" hx-swap="innerHTML">Get Edit History</button>
+
+    <div id="post_history"></div>
+{% endif %}
+<div id="reactions_post">
+    {% for type, list in reactions_post_dict.items %}
+        <div>
+            <p>{{list|length}} - <img class="react-button" src="{{ MEDIA_URL }}{{type.image}}"></p>
+        </div>
+    {% endfor %}
+    {% if canUserReactPost == True %}
+        {% for reaction_type in reaction_types %}
+            <form hx-post="{% url 'add-reaction' post.id 'post' reaction_type.id %}" hx-target="#reactions_post" class="reactions">
+                {% csrf_token %}                  
+                <input class="react-button" style="background-image: url({{ MEDIA_URL }}{{reaction_type.image}})" type="submit" name="add-reaction-post" value="{{reaction.1}}">
+            </form>
+        {% endfor %}
+    {% elif canUserReactPost == 'reaction_in_place' %}
+    <!--Reaction Controlls when the user can't react-->
+    <form hx-post="{% url 'remove-reaction' post.id 'post' %}" hx-target="#reactions_post">
+        {% csrf_token %}
+        <input type="submit" value="Remove Reaction">
+    </form> 
+    {% endif %}
+</div>
+<div id="comment_pagination">
+    {% with len=page_count|length%}
+    {% if pag_previous %}
+        <a hx-get='{% url "more-comments" curent_page|add:"-1" post.id %}' hx-target="#comments" hx-trigger="click">Previous Page</a>
+    {% endif %}
+    {% if len <= 6 %}
+        {% for page in page_count %}
+            <a hx-get='{% url "more-comments" page|add:1 post.id %}' hx-target="#comments" hx-trigger="click">{{page|add:1 }}</a>
+        {% endfor %}
+    {% else %}
+        {% for page in indentation_range %}
+            {% if page == '...' %}
+                <p style="display: inline">...</p>
+            {% else %}
+                <p style="display: inline" hx-get='{% url "more-comments" page|add:1 post.id %}' hx-target="#comments" hx-trigger="click">{{page|add:1}}</p>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    {% if pag_next %}
+        <a hx-get='{% url "more-comments" curent_page|add:1 post.id %}' hx-target="#comments" hx-trigger="click">Next page</a>
+    {% endif %}
+{% endwith %}
+</div>
+<div id="comments" >
+   {% include 'base/comments.html' %}
+</div>
+    <hr>
+    <!--Add a comment-->
+    {% if canUserMakeComment %}
+
+        <div class="comment-form">
+
+            <form method="POST" action="{% url 'add-comment' post.id %}">
+                {% csrf_token %}
+
+                <input type="text" name="content" placeholder="Write your message here">
+                <button type="submit" value="post comment">Submit</button>
+
+            </form>
+
+        </div>
+    {% endif %}
+
+{% endblock content %}

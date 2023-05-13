@@ -1,0 +1,4 @@
+{% load generateHTMLfromdict %}
+{% autoescape off %}
+	{{ topics|generateHTMLfromdict:post }}
+{% endautoescape %}

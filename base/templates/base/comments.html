@@ -1,0 +1,27 @@
+
+<div id="comment_pagination" hx-swap-oob="innerHTML" style="display: none">
+    {% with len=page_count|length%}
+    {% if pag_previous %}
+        <a hx-get='{% url "more-comments" curent_page|add:"-1" post.id %}' hx-target="#comments" hx-trigger="click">Previous Page</a>
+    {% endif %}
+    {% if len <= 6 %}
+        {% for page in page_count %}
+            <a hx-get='{% url "more-comments" page|add:1 post.id %}' hx-target="#comments" hx-trigger="click">{{page|add:1 }}</a>
+        {% endfor %}
+    {% else %}
+        {% for page in indentation_range %}
+            {% if page == '...' %}
+                <p style="display: inline">...</p>
+            {% else %}
+                <p style="display: inline" hx-get='{% url "more-comments" page|add:1 post.id %}' hx-target="#comments" hx-trigger="click">{{page|add:1}}</p>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    {% if pag_next %}
+        <a hx-get='{% url "more-comments" curent_page|add:1 post.id %}' hx-target="#comments" hx-trigger="click">Next page</a>
+    {% endif %}
+{% endwith %}
+</div>
+{% for comment in comments %}
+    {% include 'base/comment.html' %}
+{% endfor %}

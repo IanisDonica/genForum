@@ -1,0 +1,77 @@
+{% load index_dict %}
+
+{% if forloop.last %} 
+<div id="{{comment.id}}" hx-get="{% url 'more-comments' comments.number|add:1 post.id %}" hx-trigger="revealed" hx-target="#comments" hx-swap="beforeend">
+{% else %}
+<div id="{{comment.id}}">
+{% endif %}
+    <hr>
+    <a href="{% url 'user-profile' comment.user.id %}">{{comment.user}}</a>
+    {% autoescape off %}
+        {% for badge in badgeDict.comments|index_dict:comment.id %}
+            {{badge.html}}
+        {% endfor %}
+    {% endautoescape %}
+    <p>{{comment.created}}</p>
+    <p>{{comment.updated}}</p>
+    <p id="content-original_c{{comment.id}}">{{comment.content}}</p>
+    {% if canUserEditComments|index_dict:comment.id %}
+        <!-- Form for when the user decided to edit -->
+        <form class="displayNone" id="edit-form_c{{comment.id}}" action="{% url 'edit-content' comment.id 'comment' %}" method="POST">
+            {% csrf_token %}
+            <input id="comment-editor_c{{comment.id}}" type="text" name="editcontent" placeholder="Write your message here" value="{{comment.content}}">
+            <button type="submit" onclick="gobackfromedit({{comment.id}},'c')">Submit</button>
+        </form>
+        <button class="displayNone" id="go-back_c{{comment.id}}" onclick="gobackfromedit({{comment.id}},'c')">Go back</button>
+        <!-- Edit button original -->
+        <button id="original-edit-button_c{{comment.id}}" onclick="editFunction({{comment.id}},'c')">Edit comment</button>
+    {% endif %}
+
+    {% if not comment.is_deleted and canUserDeleteCommentsDict|index_dict:comment.id %}
+        <button id="delete_button_comments" hx-post="{% url 'delete-comment' comment.id %}">Delete comment</button>
+    {% elif comment.is_deleted %}
+        <p>Comment is delted by {{comment.deleted_by}}</p>
+    {% endif %}
+    
+    {% if canUserSeeEditHistoryComments %}
+        <button id="change_button{{comment.id}}" hx-get="{% url 'edit-history' comment.id 'comment' %}" hx-target="#comment-history{{comment.id}}" hx-swap="innerHTML">Get Edit History</button>
+    {% endif %}
+    <div id="reactions{{comment.id}}">
+        <!--Reactions-->
+        {% for comment_dict, dict in reactions_comment_dict.items %}
+            {% if comment_dict == comment %}
+                {% for type, list in dict.items %}
+                    <div>
+                        <p>{{list|length}} - <img class="react-button" src="{{ MEDIA_URL }}{{type.image}}"></p>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+        <!--Reactions controll-->
+        {% for comment_dict, react_value in canUserReactComment.items %}
+            {% if comment_dict == comment.id %}
+                <!--Reaction Controlls when the user can react-->
+                {% if react_value == True %}
+                    {% for reaction_type in reaction_types %}
+                    <form class="reactions" hx-post="{% url 'add-reaction' comment.id 'comment' reaction_type.id %}" hx-target="#reactions{{comment.id}}" hx-swap="innerHTML">
+                        {% csrf_token %}                            
+                        <input class="react-button" style="background-image: url({{ MEDIA_URL }}{{reaction_type.image}})" type="submit" value="">
+                    </form>
+                    {% endfor %}
+                {% elif react_value == "reaction_in_place" %}
+                <!--Reaction Controlls when the user can't react-->
+                    <form class="reactions" hx-post="{% url 'remove-reaction' comment.id 'comment' %}" hx-target="#reactions{{comment.id}}" hx-swap="innerHTML">
+                        {% csrf_token %}                        
+                        <input type="submit" value="Remove Reaction">
+                    </form>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </div>
+    
+    {% if canUserSeeEditHistoryComments %}
+        <div id="comment-history{{comment.id}}">
+
+        </div>
+    {% endif %}
+</div>

@@ -1,0 +1,29 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=, initial-scale=1.0">
+    <title>Forum</title>
+    {% load static %}
+    <!-- HTMX CDN -->
+    <script src="https://unpkg.com/htmx.org@1.8.6" integrity="sha384-Bj8qm/6B+71E6FQSySofJOUjA/gq330vEqjFx9LakWybUySyI1IQHwPtbTU7bNwx" crossorigin="anonymous"></script>
+    <!-- HTMX File -->
+    <script src="{% static 'htmx.min.js' %}"></script>
+    
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    {% include 'navbar.html' %}
+    {% if messages %}
+
+        {% for message in messages %}
+
+        <p>{{message}}</p>
+
+        {% endfor %}
+
+    {% endif %}
+
+    {% block content %}
+
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,25 @@
+{% for notification in notifications %}
+    <div id="notification_{{notification.id}}" 
+    {% if notification.seen %}
+        class="displayGrey"
+    {% endif %}
+    {% if forloop.last %}
+        hx-get="{% url 'notifications' %}?index={{index|add:1}}" hx-trigger="revealed" hx-target="#notifications_div" hx-swap="beforeend"
+    {% endif %}
+    >
+        <a href="#" hx-trigger="click" hx-post="{% url 'notification-seen' notification.id %}">
+        {% if notification.action_type == 'comment_on_subscribed_post' %}
+            {{notification.content_object.user}} has added a comment on the {{notification.content_object.post}}, '{{notification.message}}'
+        {% elif notification.action_type == 'reaction_on_subscribed_comment' %}
+            {{notification.content_object.user}} has added a reaction on the {{notification.content_object.comment}}
+        {% elif notification.action_type == 'comment_on_profile_post' %}
+            {{notification.content_object.user}} has posted on your profile
+        {% elif notification.action_type == 'reaction_on_subscribed_post' %}
+            {{notification.content_object.user}} has added a reaction on the {{notification.content_object.post}}
+        {% endif %}
+        </a>
+    </div>
+    <hr>
+{% endfor %}
+
+<p id="notification_unseen_counter" hx-swap-oob="innerHTML">Notification {{notifications_unseen}}</p>

@@ -1,0 +1,16 @@
+{% for comment in comments %}
+    <br>
+    <a href="{% url 'post' comment.post.id %}#{{comment.id}}">{{comment}}</a>
+    <p>{{comment.created}}</p>
+{% endfor %}
+
+{% if last %}
+<button id="load-more-button-comments" hx-swap-oob="outerHTML" class="displayNone"></button>
+{% else %}
+<button id="load-more-button-comments"
+        hx-get="{% url 'profile-comments-get' user.id comments_pag_value %}" 
+        hx-target="#comments_inner" 
+        hx-trigger="click" 
+        hx-swap="beforeend" 
+        hx-swap-oob="outerHTML">Load more</button>
+{% endif %}

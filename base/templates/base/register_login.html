@@ -1,0 +1,78 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+{% load widget_tweaks %}
+{% load static %}
+{% if page == 'login' %}
+<div>
+    <form method="POST" action="">
+        {% csrf_token %}
+
+        <label>email</label>
+        <input type="text" name="email" placeholder="Enter Email">
+
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Enter Password">
+
+        <input type="submit" value="Login">
+    </form>
+
+    <a href="{% url 'register-user' %}">Don't have an account? Register here</a>
+	<a href="{% url 'send-reset-password' %}">Have a account but forgot the password? Reset it here</a>
+</div>
+{% elif page == 'register'  %}
+<div>
+    <form method="POST" action="">
+        {% csrf_token %}
+        {{ form.name.label }}
+        {% render_field form.name class="form-control" hx-post="/check/name/" hx-trigger="keyup delay:2s" hx-target="#username-error" %}
+        {{ form.name.error }}
+        <div id="username-error">
+
+        </div>
+        <br>
+        {{ form.email.label }}
+        {% render_field form.email class="form-control" hx-post="/check/email/" hx-trigger="keyup delay:2s" hx-target="#email-error" %}
+        {{ form.email.error }}
+        <div id="email-error">
+
+        </div>
+        <br>
+        <p>password 1</p>
+        {{form.password1}}
+        <br>
+        <p>password 2</p>
+        {{form.password2}}
+
+        {% for erorr in form.non_field_errors %}
+
+            {{eror}}
+
+        {% endfor %}
+        <br>
+        <input type="submit" value="Register">
+    </form>
+
+    <a href="{% url 'login-user' %}">Already have an account? Log in here</a>
+	<a href="{% url 'send-reset-password' %}">Have a account but forgot the password? Reset it here</a>
+</div>
+{% elif page == 'reset_post_mail' %}
+	<form method="POST" action={% url 'reset-password' uid token %}>
+		{% csrf_token %}
+		<label for="password1">Password1</label>
+		<input type="password" name="password1" placeholder="Enter your password here">
+		<label for="password2">Password2</label>
+		<input type="password" name="password2" placeholder="Enter your password again here :3">
+		<input type="submit" value="Send password reset">
+	</form>
+{% elif page == 'reset_pre_mail' %}
+	<p>Forgot your password? Reset your password now</p>
+	<form method="POST" action="{% url 'send-reset-password' %}">
+		{% csrf_token %}
+		<input type="email" name="email" placeholder="Enter the email of the account">
+		<input type="submit">
+	</form>
+{% endif %}
+
+{% endblock content %}

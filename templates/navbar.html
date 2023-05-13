@@ -1,0 +1,49 @@
+<script>
+    var closed_notifications = true;
+    function close_or_open_notifications() {
+        if(closed_notifications == true) {
+            document.getElementById("notifications_div").style.display = 'block'
+            closed_notifications = false
+        } else {
+            document.getElementById("notifications_div").style.display = 'none'
+            closed_notifications = true
+        }
+    }
+</script>
+
+<style>
+    #notifications_div {
+        display: none;
+    }
+    .displayGrey {
+        background-color: gray;
+    }
+    #notifications_div {
+        width: 200px;
+        height: 300px;
+        overflow: scroll;
+    }
+
+</style>
+
+<a href="/">
+    <h1>Logo</h1>
+</a>
+{% if user.is_authenticated %}
+
+    <p>Hello {{request.user.name}}</p>
+    <a href="{% url 'logout-user' %}">Log out</a>
+
+{% else %}
+
+    <a href="{% url 'login-user' %}">Login</a>
+    <a href="{% url 'register-user' %}">Register</a>
+
+{% endif %}
+
+<hr>
+<div>    
+    <p onclick='close_or_open_notifications()' id="notification_unseen_counter"></p>
+    <div id="notifications_div" hx-get="{% url 'notifications' %}" hx-trigger="load" hx-swap="beforeend">
+    </div>
+</div>

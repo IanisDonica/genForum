@@ -1,0 +1,46 @@
+{% if item == 'post' %}
+    {% for type, list in reactions_post_dict.items %}
+    <div>
+        <p>{{list|length}} - <img class="react-button" src="{{ MEDIA_URL }}{{type.image}}"></p>
+    </div>
+    {% endfor %}
+    {% if canUserReactPost == True %}
+    {% for reaction_type in reaction_types %}
+        <form hx-post="{% url 'add-reaction' post.id 'post' reaction_type.id %}" hx-target="#reactions_post" class="reactions">
+            {% csrf_token %}                  
+            <input class="react-button" style="background-image: url({{ MEDIA_URL }}{{reaction_type.image}})" type="submit" name="add-reaction-post" value="{{reaction.1}}">
+        </form>
+    {% endfor %}
+    {% elif canUserReactPost == 'reaction_in_place' %}
+    <!--Reaction Controlls when the user can't react-->
+        <form hx-post="{% url 'remove-reaction' post.id 'post' %}" hx-target="#reactions_post">
+    {% csrf_token %}
+    <input type="submit" value="Remove Reaction">
+    </form> 
+    {% endif %}
+{% elif item == 'comment' %}
+<!--Reactions-->
+    {% for type, list in reactions_single_comment.items %}
+        <div id="">
+            <p>{{list|length}} - <img class="react-button" src="{{ MEDIA_URL }}{{type.image}}"></p>
+        </div>
+    {% endfor %}
+    <!--Reactions controll-->
+    {% if request.user.is_authenticated %}
+        <!--Reaction Controlls when the user can react-->
+        {% if canUserReactComment == True %}
+            {% for reaction_type in reaction_types %}
+            <form class="reactions" hx-post="{% url 'add-reaction' comment.id 'comment' reaction_type.id %}" hx-target="#reactions{{comment.id}}" hx-swap="innerHTML">
+                {% csrf_token %}                            
+                <input class="react-button" style="background-image: url({{ MEDIA_URL }}{{reaction_type.image}})" type="submit" value="" name="add-reaction">
+            </form>
+            {% endfor %}
+        {% else %}
+        <!--Reaction Controlls when the user can't react-->
+        <form hx-post="{% url 'remove-reaction' comment.id 'comment' %}" hx-target="#reactions{{comment.id}}" hx-swap="innerHTML">
+            {% csrf_token %}                        
+            <input type="submit" value="Remove Reaction">
+        </form>
+        {% endif %}
+    {% endif %}
+{% endif %}

@@ -1,0 +1,16 @@
+{% for post in posts %}
+<br>
+<a href="{% url 'post' post.id %}">{{post.name}}</a>
+<p>{{post.created}}</p>
+{% endfor %}
+
+{% if last %}
+<button id="load-more-button-posts" hx-swap-oob="outerHTML" class="displayNone"></button>
+{% else %}
+<button id="load-more-button-posts"
+                hx-get="{% url 'profile-posts-get' user.id posts_pag_value %}" 
+                hx-target="#posts_inner" 
+                hx-trigger="click" 
+                hx-swap="beforeend"
+                hx-swap-oob="outerHTML">Load more</button>
+{% endif %}

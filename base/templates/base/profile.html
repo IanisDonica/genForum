@@ -1,0 +1,93 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+    <script>
+        arrayindex = ['profile_posts', 'activity', 'posts', 'comments']
+        length = arrayindex.length
+        function switchfunction(arrayindexnum) {
+            i = 0;
+            while (i < length) {
+                if (i != arrayindexnum) {
+                    document.getElementById(arrayindex[i]).style.display = 'none'
+                } else {
+                    document.getElementById(arrayindex[arrayindexnum]).style.display = 'block'
+                }
+                i = i + 1;
+            }
+        }
+
+    </script>
+    <style>
+        .displayNone {
+            display: none;
+        }
+    </style>
+
+    {% if request.user == user %} 
+        <a href="{% url 'user-settings' %}">Edit profile</a>
+    {% endif %}
+    <img src="{{ MEDIA_URL }}{{user.avatar}}" alt="">
+    <img src="{{ MEDIA_URL }}{{user.background}}" alt="">
+    <p>{{user.name}}</p>
+
+    <br> 
+    <div class="profile-controls">
+        <button onclick="switchfunction(0)">Profile posts</button>
+        <button onclick="switchfunction(1)"  
+                hx-get="{% url 'profile-activity-get' user.id 1 %}" 
+                hx-target="#activity_inner" 
+                hx-trigger="click once"
+                hx-swap="beforeend">Activity</button>
+        <button onclick="switchfunction(2)"
+                hx-get="{% url 'profile-posts-get' user.id 1 %}" 
+                hx-target="#posts_inner" 
+                hx-trigger="click once"
+                hx-swap="beforeend">Posts</button>
+        <button onclick="switchfunction(3)" 
+                hx-get="{% url 'profile-comments-get' user.id 1 %}" 
+                hx-target="#comments_inner" 
+                hx-trigger="click once"
+                hx-swap="beforeend">Comments</button>
+    </div>
+    <div id="profile_posts">
+        <p>Profile Posts</p>
+        <div>
+            {% for post in profile_posts %}
+                <a href="{% url 'user-profile' post.user.id %}">{{post.user}}</a>
+                <p>{{post.content}}</p>
+                <p>{{post.created}}</p>
+            {% endfor %}
+            <br>
+            {% if canUserMakeProfilePost == True %}
+                <form action="" method="POST" >
+                    {% csrf_token %}
+
+                    <input type="text" name="content" placeholder="Write your message here">
+                    <input type="submit" name="make-profile-post" value="post comment">
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="activity" class="displayNone">
+        <p>Activity</p>
+        <div id="activity_inner">
+        </div>
+        <button id="load-more-button-activy">Load more</button>
+    </div>
+
+    <div id="posts" class="displayNone">
+        <p>POSTS</p>
+        <div id="posts_inner">
+        </div>
+        <button id="load-more-button-posts">Load more</button>
+    </div>
+
+    <div id="comments" class="displayNone">
+        <p>Comments</p>
+        <div id="comments_inner">
+        </div>
+        <button id="load-more-button-comments">Load more</button>
+    </div>
+{% endblock content %}

@@ -1,0 +1,20 @@
+{% for item in posts_n_comments %}
+    {% if item.model_name == 'post' %}
+        <a href="{% url 'post' item.id %}">{{item.name}}</a>
+    {% else %}
+        <a href="{% url 'post' item.post.id %}#{{item.id}}">{{item}}</a>
+    {% endif %}
+    <p>{{item.created}}</p>
+    <br>
+{% endfor %}
+
+{% if last %}
+<button id="load-more-button-activy" hx-swap-oob="outerHTML" class="displayNone"></button>
+{% else %}
+<button id="load-more-button-activy"
+        hx-get="{% url 'profile-activity-get' user.id activity_pag_value %}" 
+        hx-target="#activity_inner" 
+        hx-trigger="click" 
+        hx-swap="beforeend" 
+        hx-swap-oob="outerHTML">Load more</button>
+{% endif %}

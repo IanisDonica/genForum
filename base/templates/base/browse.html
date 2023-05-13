@@ -1,0 +1,45 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+    {% if canPost %}
+
+    <a href="{% url 'create-post' t %}">Create Post</a>
+
+    {% endif %}
+
+    <hr>
+    <div>
+        <p>Topics</p>
+        {% for topic in topics %}    
+        
+            <div>
+                <a href="{% url 'browse' topic.id %}">{{topic.name}}</a>
+                <hr>
+            </div>
+
+        {% endfor %}
+    </div>
+
+    <hr>
+    <div>
+        <p>Pinned posts</p>
+        {% for post in pinned_posts %} 
+            <div>
+                <a href="{% url 'post' post.id %}">{{post.name}} {% if post.is_deleted %}| post deleted by {{post.deleted_by}} {% endif %}</a>
+            </div>
+
+        {% endfor %}
+    </div>
+    <hr>
+    <div>
+        {% for post in posts %}
+
+            <div>
+                <a href="{% url 'post' post.id %}">{{post.name}} {% if post.is_deleted %}| post deleted by {{post.deleted_by}} {% endif %}</a>
+            </div>
+
+        {% endfor %}
+    </div>
+
+{% endblock content %}

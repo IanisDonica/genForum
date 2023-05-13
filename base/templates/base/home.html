@@ -1,0 +1,25 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+
+<div>
+    {% for type, list in front_page_dict.items %}
+    <div>
+        <h1>{{type}}</h1>
+        <hr>
+        {% for item in list %}
+        <div>
+            {% if item.model_name == 'post' %}
+                <a href="{% url 'post' item.id %}">{{item.name}}</a>
+            {% endif %}
+            {% if item.model_name == 'topic' %}
+                <a href="{% url 'browse' item.id %}">{{item.name}}</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock content %}

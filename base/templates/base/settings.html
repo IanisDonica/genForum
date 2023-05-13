@@ -1,0 +1,34 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+    <style>
+        input[type="file"] {
+            display: none;
+        }
+        .file-input {
+            border: 1px solid #ccc;
+            display: inline-block;
+            padding: 100px 200px;
+            cursor: pointer;
+        }
+    </style>
+
+    <form action="" method="POST" enctype="multipart/form-data">    
+        {% csrf_token %}
+        <h1>Avatar</h1>
+        <label class="file-input">
+            <input type="file" name="avatar" id="id_avatar" class="file-input">
+            <p>Upload here</p>
+        </label>
+
+        <h1>Background</h1>
+        <label class="file-input">
+            <input type="file" name="background" id="id_background" class="file-input">
+            <p>Upload here</p>
+        </label>
+        <hr>
+        {{ form.non_field_errors }}
+        <input type="submit" name="user-settings-save" value="submit">
+    </form>
+{% endblock content %}
