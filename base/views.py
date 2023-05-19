@@ -23,8 +23,6 @@ from .utils.generatorsAndUtils import *
 from .utils.context_generators import ContextGenerator
 from django.contrib.contenttypes.models import ContentType
 
-#TODO add a way for profile user or original poster to delete profile posts
-#TODO Add a moving posts functionality
 
 User = get_user_model()
 
@@ -82,9 +80,7 @@ navbar_ammount = settings.NAV_BAR_AMOUNT
 navbar_ammount_2 = settings.NAV_BAR_AMOUNT_2
 
 #TODO Make it so all these checkers take badges instead of user so badges get called only once (EDIT MAY NOT BE NEEDED)
-#TODO Add post pining
-#TODO Add ability to add badges without django admin pannel
-#TODO add a context generator
+
 
 def post(request, pk):
     user = request.user
@@ -156,10 +152,16 @@ def editContent(request, pk, sk):
             item.edited_by = request.user
             item.save()
 
+            reactions = Reaction.objects.filter(comment=item)
+
             item2.previous = item
             item2.created = item.created
             item2.content = request.POST.get('editcontent')
             item2.save()
+
+            for reaction in reactions:
+                reaction.comment = item2
+                reaction.save()
 
             try:
                 badges = user.badges.all()
@@ -184,10 +186,16 @@ def editContent(request, pk, sk):
             item.edited_by = request.user
             item.save()
 
+            reactions = Reaction.objects.filter(post=item)
+
             item2.previous = item
             item2.created = item.created
             item2.content = request.POST.get('editcontent')
             item2.save()
+
+            for reaction in reactions:
+                reaction.post = item2
+                reaction.save()
 
             id = pk
 
