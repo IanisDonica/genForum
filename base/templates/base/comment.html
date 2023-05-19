@@ -1,6 +1,6 @@
 {% load index_dict %}
 
-{% if forloop.last %} 
+{% if forloop.last and pag_next %}
 <div id="{{comment.id}}" hx-get="{% url 'more-comments' comments.number|add:1 post.id %}" hx-trigger="revealed" hx-target="#comments" hx-swap="beforeend">
 {% else %}
 <div id="{{comment.id}}">

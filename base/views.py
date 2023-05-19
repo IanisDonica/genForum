@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import Post, ReactionTypes, NotificationSubscribe, Notification
+from .models import Post, ReactionTypes, NotificationSubscribe, Notification, Topic
 from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate, login, logout
@@ -8,7 +8,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_bytes, force_str
-from .utils import generate_token, password_reset_token 
+from .utils.utils import generate_token, password_reset_token
 from django.core.mail import EmailMessage
 from django.contrib.auth.decorators import login_required
 from django.conf import settings 
@@ -18,9 +18,9 @@ from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from itertools import chain
 from django.contrib import messages
-from .generatorsAndUtils import *
-from .sanitationChecks import *
 import math
+from .utils.generatorsAndUtils import *
+from .utils.context_generators import ContextGenerator
 from django.contrib.contenttypes.models import ContentType
 
 #TODO add a way for profile user or original poster to delete profile posts

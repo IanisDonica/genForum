@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import UserManager, AbstractBaseUser, PermissionsMixin
 from django.db.models import UniqueConstraint
-from .formatChecker import ContentTypeRestrictedFileField
+from .utils.formatChecker import ContentTypeRestrictedFileField
 from PIL import Image as im
 from forum.settings import BASE_DIR
 from django.contrib.contenttypes.fields import GenericForeignKey
