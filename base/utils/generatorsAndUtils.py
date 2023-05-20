@@ -194,6 +194,12 @@ def RemoveDeletedIfNoPermisions(posts, badges):
 
     return posts.exclude(pk__in=posts_exclude) 
 
+def canUserDeleteProfilePostsGenerator(request, posts):
+    canUserDeleteProfilePostsDict = {}
+    for post in posts:
+        canUserDeleteProfilePostsDict[post.id] = backendActionAuth(request, "delete-profile-posts", post)
+
+    return canUserDeleteProfilePostsDict
 
 
 

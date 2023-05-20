@@ -547,7 +547,13 @@ def createPost(request, tk):
 def userProfile(request, pk):
     user = User.objects.get(id=pk)
 
-    profile_posts = Post.objects.filter(profile=user).order_by('-created')
+    try:
+        badges = request.user.badges.all()
+    except:
+        badges = None
+
+    #This is temporary make a special case for this, and make it paginated
+    profile_posts = RemoveDeletedIfNoPermisions(Post.objects.filter(profile=user).order_by('-created'), badges)
 
     if request.method == "POST":
         if 'make-profile-post' in request.POST:
@@ -562,14 +568,12 @@ def userProfile(request, pk):
                         pass
                 
                 return redirect('user-profile', pk)
-            
-    canUserMakeProfilePost = True
-    if not request.user.is_authenticated:
-        canUserMakeProfilePost = False
 
-    
-    context = { "user": user, 
-    "canUserMakeProfilePost": canUserMakeProfilePost, "profile_posts": profile_posts}
+    canUserMakeProfilePost = backendActionAuth(request, "make-profile-post", None)
+    canUserDeleteProfilePosts = canUserDeleteProfilePostsGenerator(request, profile_posts)
+
+    context = { "user": user,
+    "canUserMakeProfilePost": canUserMakeProfilePost, "profile_posts": profile_posts, "canUserDeleteProfilePosts": canUserDeleteProfilePosts}
 
     return render(request, 'base/profile.html', context)
 
@@ -796,3 +800,15 @@ def getTopics(request, post):
     context = {'topics': topics, 'post': post}
 
     return render(request, 'base/move_topics.html', context)
+
+def deleteProfilePost(request, postid):
+    #This is temporary make a special case for all of this, including pagnation
+    post = Post.objects.get(id=postid)
+    if backendActionAuth(request, "delete-profile-posts", post):
+        post.is_deleted = True
+        post.deleted_by = request.user
+        post.save()
+
+    response = HttpResponse()
+    response['HX-Redirect'] = "/profile/" + str(post.profile.id) + "/"
+    return response

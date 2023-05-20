@@ -53,6 +53,7 @@ class BadgeType(models.Model):
     make_reactions_comments = models.BooleanField(default=None, null=True)
     make_reactions_post = models.BooleanField(default=None, null=True)
     make_profile_posts = models.BooleanField(default=None, null=True)
+    delete_profile_posts = models.BooleanField(default=None, null=True)
 
 
 class User(AbstractBaseUser, PermissionsMixin):

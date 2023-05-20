@@ -54,7 +54,7 @@ def backendActionAuth(request, action, id):
             return False
 
         case 'make-profile-post':
-            if user.is_authenticated and badge_checker(badges, "make_profile_posts"):
+            if user.is_authenticated and badge_checker(badges, "make_profile_posts") != False:
                 return True
             return False
         
@@ -71,7 +71,6 @@ def backendActionAuth(request, action, id):
         case 'can-user-delete-post':
             if user == id.user or badge_checker(badges, "delete_post_perm") and not id.is_deleted and BadgeTopicAndPostChecker(badges, id):
                 return True
-            print("badge_checker.py: ", badge_checker(badges, "delete_post_perm"))
             return False
 
         case 'can-user-lock-posts':
@@ -106,5 +105,10 @@ def backendActionAuth(request, action, id):
 
         case 'can-user-see-post-history':
             if badge_checker(badges, "see_post_history"):
+                return True
+            return False
+
+        case 'delete-profile-posts':
+            if ( badge_checker(badges, "delete_profile_posts") or id.user == user or id.profile == user ) and not id.is_deleted:
                 return True
             return False

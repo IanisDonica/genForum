@@ -1,5 +1,5 @@
 {% extends 'main.html' %}
-
+{% load index_dict %}
 {% block content %}
 
     <script>
@@ -57,6 +57,14 @@
                 <a href="{% url 'user-profile' post.user.id %}">{{post.user}}</a>
                 <p>{{post.content}}</p>
                 <p>{{post.created}}</p>
+                {% if post.is_deleted %}
+                    <p>This post has been delted by {{post.deleted_by}}</p>
+                {% endif %}
+
+                {% if canUserDeleteProfilePosts|index_dict:post.id %}
+                    <button hx-trigger="click" hx-post="{% url 'delete-profile-post' post.id %}">Delete post</button>
+                {% endif %}
+                <hr>
             {% endfor %}
             <br>
             {% if canUserMakeProfilePost == True %}
@@ -67,6 +75,7 @@
                     <input type="submit" name="make-profile-post" value="post comment">
                 </form>
             {% endif %}
+
         </div>
     </div>
 
