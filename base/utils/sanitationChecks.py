@@ -15,7 +15,7 @@ def backendActionAuth(request, action, id):
 
     match action: 
         case 'edit-comment':
-            if request.user == id.user or badge_checker(badges, "edit_comments_perm"):
+            if user == id.user or badge_checker(badges, "edit_comments_perm"):
                 return True
             return False
 

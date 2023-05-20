@@ -96,7 +96,6 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
             context = context | context_tmp
 
     if comment_reaction_check or post_reaction_check:
-        from ..models import ReactionTypes
         if post_reaction_check:
             reactions_post_dict = reactionsPostGenerator(var["post"])
             canUserReactPost = canUserReactPostFunction(var["request"], var["user"], var["post"])
@@ -129,8 +128,8 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
             context = context | context_tmp
 
     if edit_post_check:
-        canusereditpost = canUserEditPostGenerator(var["user"], var["post"])
-        context["canusereditpost"] = canusereditpost
+        canUserEditPost = backendActionAuth(var["request"], "edit-post", var["post"])
+        context["canUserEditPost"] = canUserEditPost
 
     if lock_post_check:
         canUserLockPost = backendActionAuth(var["request"], "can-user-lock-posts", var["post"])

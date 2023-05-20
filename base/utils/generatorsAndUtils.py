@@ -3,7 +3,7 @@
 #TODO Find a better name for this and all of the function
 
 from .sanitationChecks import *
-from ..models import User, Reaction, Comment, Topic
+from ..models import User, Reaction, Comment, Topic, ReactionTypes 
 
 def history_checker(item):
     item_div = []
@@ -121,16 +121,6 @@ def canUserEditCommentsGenerator(request, commnents):
 
     return can_user_edit
 
-def canUserEditPostGenerator(user, post):
-    try:
-        badges = user.badges.all()
-    except:
-        badges = None
-    
-    if badge_checker(badges, "edit_posts_perm") or post.user == user:
-        return True
-    else: 
-        return False
 
 def CommentListGenerator(user, comments, badges):
     permision = badge_checker(badges, "see_deleted_comments_perm")
