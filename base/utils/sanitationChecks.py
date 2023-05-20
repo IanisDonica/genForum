@@ -15,17 +15,17 @@ def backendActionAuth(request, action, id):
 
     match action: 
         case 'edit-comment':
-            if user == id.user or badge_checker(badges, "edit_comments_perm"):
+            if user == id.user or badge_checker(badges, "edit_comments_perm") and badge_checker(badges, "edit_comments_perm") != False and user.is_verified:
                 return True
             return False
 
         case 'edit-post':
-            if user == id.user or badge_checker(badges, "edit_posts_perm"):
+            if user == id.user or badge_checker(badges, "edit_posts_perm") and badge_checker(badges, "edit_posts_perm") != False and user.is_verified:
                 return True
             return False
 
         case 'add-reaction-comment':
-            if not user.is_authenticated:
+            if not user.is_verified or badge_checker(badges, "make_reactions_comments") == False:
                 return False
 
             if len(Reaction.objects.filter(comment=id, user=user)):
@@ -34,7 +34,7 @@ def backendActionAuth(request, action, id):
                 return True
 
         case 'add-reaction-post':
-            if not user.is_authenticated:
+            if not user.is_verified or badge_checker(badges, "make_reactions_post") == False:
                 return False
             
             try:
@@ -44,17 +44,17 @@ def backendActionAuth(request, action, id):
                 return True
 
         case 'remove-reaction':
-            if user == id.user:
+            if user == id.user and badge_checker(badges, "make_reactions_post") != False:
                 return True
             return False
 
         case 'make-comment':
-            if user.is_authenticated and (id.is_locked == False or badge_checker(badges, "make_comments_on_locked_perm")) and BadgeTopicAndPostChecker(badges, id):
+            if user.is_authenticated and (id.is_locked == False or badge_checker(badges, "make_comments_on_locked_perm")) and BadgeTopicAndPostChecker(badges, id) and badge_checker(badges, "make_comments") != False:
                 return True
             return False
 
         case 'make-profile-post':
-            if user.is_authenticated:
+            if user.is_authenticated and badge_checker(badges, "make_profile_posts"):
                 return True
             return False
         

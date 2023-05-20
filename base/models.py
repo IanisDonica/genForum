@@ -37,6 +37,7 @@ class BadgeType(models.Model):
 
     inheritance = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True)
 
+    make_comments = models.BooleanField(default=None, null=True)
     edit_comments_perm = models.BooleanField(default=None, null=True)
     edit_posts_perm = models.BooleanField(default=None, null=True)
     delete_comments_perm = models.BooleanField(default=None, null=True)
@@ -49,6 +50,9 @@ class BadgeType(models.Model):
     see_post_history = models.BooleanField(default=None, null=True)
     see_deleted_post_perm = models.BooleanField(default=None, null=True)
     move_threads_perm = models.BooleanField(default=None, null=True)
+    make_reactions_comments = models.BooleanField(default=None, null=True)
+    make_reactions_post = models.BooleanField(default=None, null=True)
+    make_profile_posts = models.BooleanField(default=None, null=True)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -69,7 +73,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     register = models.CharField(max_length=255, default='', blank=True)
 
-    badges = models.ManyToManyField(BadgeType)
+    badges = models.ManyToManyField(BadgeType, blank=True)
 
     objects = CustomUserManager()
 
