@@ -435,17 +435,13 @@ def editHistory(request, id, type):
 # ------------------------- #
 
 def browse(request, tk):
+    #yeah no this wont work
     if request.user.is_authenticated:
         canPost = True
     else:
         canPost = False
 
     try:
-        badges = request.user.badges.all()
-    except:
-        badges = None
-
-    try: 
         badges = request.user.badges.all()
     except:
         badges = None
@@ -460,9 +456,87 @@ def browse(request, tk):
     posts = RemoveDeletedIfNoPermisions(TopicsGenerator(posts, badges), badges)
     pinned_posts = RemoveDeletedIfNoPermisions(TopicsGenerator(Post.objects.filter(parrent_topic=tk, is_pinned=True), badges), badges)
 
-    context = {"topics": topics, "posts": posts, "canPost": canPost, 't': tk, "pinned_posts": pinned_posts}
+    index = int(request.GET.get("index")) if request.GET.get('index') != None else 1
+
+    paginated_posts = Paginator(posts, settings.POST_PAG_AMOUNT)
+    page_count = range(paginated_posts.num_pages)
+
+    try:
+        posts = paginated_posts.page(index)
+    except:
+        posts = paginated_posts.page(page_count[-1])
+
+    pag_next = posts.has_next()
+    pag_previous = posts.has_previous()
+
+    front_range = range(settings.NAV_BAR_AMOUNT)
+
+    if index - settings.NAV_BAR_AMOUNT_2 - 1 < 1:
+        m1 = settings.NAV_BAR_AMOUNT_2  # to make it odd
+    else:
+        m1 = index - settings.NAV_BAR_AMOUNT_2 - 1
+
+    if index + settings.NAV_BAR_AMOUNT_2 > paginated_posts.num_pages:
+        m2 = paginated_posts.num_pages
+    else:
+        m2 = index + settings.NAV_BAR_AMOUNT_2
+
+    middle_range = range(m1, m2)
+    back_range = range(paginated_posts.num_pages - settings.NAV_BAR_AMOUNT, paginated_posts.num_pages)
+
+    indentation_range = chainNoOverlap(front_range, middle_range, back_range)
+
+    context = {"topics": topics, "canPost": canPost, 't': tk,
+               "pinned_posts": pinned_posts,"indentation_range": indentation_range,
+                "pag_previous": pag_previous, "pag_next": pag_next,
+                "page_count":page_count, "posts": posts, "curent_page": index}
 
     return render(request, 'base/browse.html', context)
+
+def morePosts(request, nr, topicid):
+
+
+    try:
+        badges = request.user.badges.all()
+    except:
+        badges = None
+
+    posts = Post.objects.filter(parrent_topic=topicid, is_pinned=False)
+
+    posts = RemoveDeletedIfNoPermisions(TopicsGenerator(posts, badges), badges)
+
+    paginated_posts = Paginator(posts, settings.POST_PAG_AMOUNT)
+    page_count = range(paginated_posts.num_pages)
+
+    try:
+        posts = paginated_posts.page(nr)
+    except:
+        posts = paginated_posts.page(page_count[-1])
+
+    pag_next = posts.has_next()
+    pag_previous = posts.has_previous()
+
+    front_range = range(settings.NAV_BAR_AMOUNT)
+
+    if nr - settings.NAV_BAR_AMOUNT_2 - 1 < 1:
+        m1 = settings.NAV_BAR_AMOUNT_2  # to make it odd
+    else:
+        m1 = nr - settings.NAV_BAR_AMOUNT_2 - 1
+
+    if nr + settings.NAV_BAR_AMOUNT_2 > paginated_posts.num_pages:
+        m2 = paginated_posts.num_pages
+    else:
+        m2 = nr + settings.NAV_BAR_AMOUNT_2
+
+
+    middle_range = range(m1, m2)
+    back_range = range(paginated_posts.num_pages - settings.NAV_BAR_AMOUNT, paginated_posts.num_pages)
+
+    indentation_range = chainNoOverlap(front_range, middle_range, back_range)
+
+    context = {"indentation_range": indentation_range, "pag_previous": pag_previous, "pag_next": pag_next, "posts": posts, "curent_page": nr, "page_count": page_count, 't': topicid}
+
+    return render(request, 'base/browse_posts.html', context)
 
 def register_user(request):
     page = "register"
@@ -708,7 +782,6 @@ def notificationSeen(request, notificationid):
         url = reverse('post', args=[notification.content_object.comment.post.id])
     elif action_type == "comment_on_profile_post":
         url = reverse("user-profile", args=[notification.content_object.profile.id])
-
 
     response = HttpResponse()
     response['HX-Redirect'] = url

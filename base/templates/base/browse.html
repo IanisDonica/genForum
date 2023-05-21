@@ -28,18 +28,34 @@
             <div>
                 <a href="{% url 'post' post.id %}">{{post.name}} {% if post.is_deleted %}| post deleted by {{post.deleted_by}} {% endif %}</a>
             </div>
-
         {% endfor %}
     </div>
     <hr>
-    <div>
-        {% for post in posts %}
-
-            <div>
-                <a href="{% url 'post' post.id %}">{{post.name}} {% if post.is_deleted %}| post deleted by {{post.deleted_by}} {% endif %}</a>
-            </div>
-
-        {% endfor %}
+    <div id="post_pagination">
+        {% with len=page_count|length%}
+            {% if pag_previous %}
+                <a hx-get='{% url "more-posts" curent_page|add:"-1" t %}' hx-target="#posts" hx-trigger="click">Previous Page</a>
+            {% endif %}
+            {% if len <= 6 %}
+                {% for page in page_count  %}
+                    <a hx-get='{% url "more-posts" page|add:1 t %}' hx-target="#posts" hx-trigger="click">{{page|add:1}}</a>
+                {% endfor %}
+            {% else %}
+                {% for page in indentation_range %}
+                    {% if page == '...' %}
+                        <p style="display: inline">...</p>
+                    {% else %}
+                        <p style="display: inline" hx-get='{% url "more-posts" page|add:1 t %}' hx-target="#posts" hx-trigger="click">{{page|add:1}}</p>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+            {% if pag_next %}
+                <a hx-get='{% url "more-posts" curent_page|add:1 t %}' hx-target="#posts" hx-trigger="click">Next page</a>
+            {% endif %}
+        {% endwith %}
+    </div>
+    <div id="posts">
+        {% include 'base/browse_posts.html' %}
     </div>
 
 {% endblock content %}

@@ -35,4 +35,5 @@ urlpatterns = [
     path('move-thread/<int:post>/<int:topic>', views.moveThread, name='move-thread'),
     path('get-topics/<int:post>/', views.getTopics, name='get-topics'),
     path('delete-profile-post/<int:postid>', views.deleteProfilePost, name='delete-profile-post'),
+    path('more-posts/<int:nr>/<int:topicid>', views.morePosts, name='more-posts'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

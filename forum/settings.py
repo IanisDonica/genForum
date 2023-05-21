@@ -144,6 +144,8 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 
+#Just for tesing these setting are very small
+POST_PAG_AMOUNT = 2
 PAG_AMOUNT = 4
 NAV_BAR_AMOUNT = 2
 NAV_BAR_AMOUNT_2 = 1

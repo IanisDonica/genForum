@@ -1,0 +1,33 @@
+<div id="post_pagination" hx-swap-oob="innerHTML" style="display: none">
+    {% with len=page_count|length%}
+        {% if pag_previous %}
+            <a hx-get='{% url "more-posts" curent_page|add:"-1" t %}' hx-target="#posts" hx-trigger="click">Previous Page</a>
+        {% endif %}
+        {% if len <= 6 %}
+            {% for page in page_count  %}
+                <a hx-get='{% url "more-posts" page|add:1 t %}' hx-target="#posts" hx-trigger="click">{{page|add:1}}</a>
+            {% endfor %}
+        {% else %}
+            {% for page in indentation_range %}
+                {% if page == '...' %}
+                    <p style="display: inline">...</p>
+                {% else %}
+                    <p style="display: inline" hx-get='{% url "more-posts" page|add:1 t %}' hx-target="#posts" hx-trigger="click">{{page|add:1}}</p>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+        {% if pag_next %}
+            <a hx-get='{% url "more-posts" curent_page|add:1 t %}' hx-target="#posts" hx-trigger="click">Next page</a>
+        {% endif %}
+    {% endwith %}
+</div>
+
+{% for post in posts %}
+    {% if forloop.last and pag_next %}
+    <div id="{{comment.id}}" hx-get="{% url 'more-posts' curent_page|add:1 t %}" hx-trigger="revealed" hx-target="#posts" hx-swap="beforeend">
+    {% else %}
+    <div id="{{post.id}}">
+    {% endif %}
+        <a href="{% url 'post' post.id %}">{{post.name}} {% if post.is_deleted %}| post deleted by {{post.deleted_by}} {% endif %}</a>
+    </div>
+{% endfor %}

@@ -26,7 +26,10 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
             paginated_comments = Paginator(comments_pre, settings.PAG_AMOUNT)
             page_count = range(paginated_comments.num_pages)
 
-            comments = paginated_comments.page(index)
+            try:
+                comments = paginated_comments.page(index)
+            except:
+                comments = paginated_comments.page(page_count[-1])
 
             pag_next = comments.has_next()
             pag_previous = comments.has_previous()
