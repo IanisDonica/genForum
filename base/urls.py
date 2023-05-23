@@ -36,4 +36,5 @@ urlpatterns = [
     path('get-topics/<int:post>/', views.getTopics, name='get-topics'),
     path('delete-profile-post/<int:postid>', views.deleteProfilePost, name='delete-profile-post'),
     path('more-posts/<int:nr>/<int:topicid>', views.morePosts, name='more-posts'),
+    path('post-pinning/<str:type>/<int:postid>', views.postPining, name='post-pinning'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

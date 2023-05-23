@@ -4,7 +4,9 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
                      pag_comments_check=False, make_comment_check=False, comment_history_check=False,
                      edit_comments_check=False, delete_comments_check=False, edit_post_check=False,
                      lock_post_check=False, unlock_posts_check=False, post_history_check=False,
-                     delete_post_check=False, move_threads_check=False):
+                     delete_post_check=False, move_threads_check=False, pin_posts_check=False,
+                     unpin_posts_check=False
+                    ):
     from django.conf import settings
 
     context = {}
@@ -151,7 +153,15 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
         context["canUserDeletePost"] = canUserDeletePost
 
     if move_threads_check:
-        canUserMoveThreads = badge_checker(var["badges"], "move_threads_perm")
+        canUserMoveThreads = backendActionAuth(var["request"], 'can-user-move-thread', None)
         context["canUserMoveThreads"] = canUserMoveThreads
+
+    if pin_posts_check:
+        canUserPinPosts = backendActionAuth(var["request"], 'can-user-pin-posts', var["post"])
+        context["canUserPinPosts"] = canUserPinPosts
+
+    if unpin_posts_check:
+        canUserUnpinPosts = backendActionAuth(var["request"], 'can-user-unpin-posts', var["post"])
+        context["canUserUnpinPosts"] = canUserUnpinPosts
 
     return context

@@ -81,6 +81,11 @@
 
     <div id="post_history"></div>
 {% endif %}
+{% if canUserPinPosts and not post.is_pinned %}
+        <button hx-post="{% url 'post-pinning' 'pin' post.id %}" hx-trigger="click">Pin Post</button>
+{% elif canUserUnpinPosts and post.is_pinned %}
+        <button hx-post="{% url 'post-pinning' 'unpin' post.id %}" hx-trigger="click">Unpin Post</button>
+{% endif %}
 <div id="reactions_post">
     {% for type, list in reactions_post_dict.items %}
         <div>

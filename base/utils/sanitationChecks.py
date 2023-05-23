@@ -112,3 +112,13 @@ def backendActionAuth(request, action, id):
             if ( badge_checker(badges, "delete_profile_posts") or id.user == user or id.profile == user ) and not id.is_deleted:
                 return True
             return False
+
+        case 'can-user-pin-posts':
+            if badge_checker(badges, "pin_posts_perm") and not id.is_pinned:
+                return True
+            return False
+
+        case 'can-user-unpin-posts':
+            if badge_checker(badges, "unpin_posts_perm") and id.is_pinned:
+                return True
+            return False

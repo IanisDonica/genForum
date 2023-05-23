@@ -100,12 +100,13 @@ def post(request, pk):
                                pag_comments_check=True, make_comment_check=True, comment_history_check=True,
                                edit_comments_check=True, delete_comments_check=True, edit_post_check=True,
                                lock_post_check=True, unlock_posts_check=True, post_history_check=True,
-                               delete_post_check=True, move_threads_check=True)
+                               delete_post_check=True, move_threads_check=True, pin_posts_check=True,
+                                unpin_posts_check=True)
 
     context = context | {"post": post}
     return render(request, 'base/post.html', context)
 
-@ require_http_methods(['POST'])
+@require_http_methods(['POST'])
 def addComment(request, pk):
     post = Post.objects.get(id=pk)
 
@@ -367,7 +368,7 @@ def lockPost(request, postid):
         response['HX-Redirect'] = ""
         
         return response
-    
+
     if backendActionAuth(request, "can-user-lock-posts" ,post):
         post.is_locked = True
         post.save()
@@ -378,6 +379,46 @@ def lockPost(request, postid):
     else:
         messages.info(request, "You do not have permision to lock this post")
 
+
+def postPining(request, type, postid):
+    try:
+        post = Post.objects.get(id=postid)
+    except:
+        messages.info(request, "Post with the id of " + str(postid) + " does not exist")
+        response = HttpResponse()
+        response['HX-Redirect'] = ""
+
+        return response
+
+    if type == "pin":
+        if backendActionAuth(request, "can-user-pin-posts", post):
+            post.is_pinned = True
+            post.save()
+
+            response = HttpResponse()
+            response['HX-Redirect'] = "/post/" + str(postid) + '/'
+            return response
+        else:
+            messages.info(request, "You do not have permision to pin this post")
+
+    elif type == "unpin":
+        if backendActionAuth(request, "can-user-unpin-posts", post):
+            post.is_pinned = False
+            post.save()
+
+            response = HttpResponse()
+            response['HX-Redirect'] = "/post/" + str(postid) + '/'
+            return response
+        else:
+            messages.info(request, "You do not have permision to unpin this post")
+
+    else:
+        messages.info(request, "Invalid request")
+
+    response = HttpResponse()
+    response['HX-Redirect'] = "/post/" + str(postid) + '/'
+
+    return response
 
 @require_http_methods(['POST'])
 def unlockPost(request, postid):
@@ -494,8 +535,6 @@ def browse(request, tk):
     return render(request, 'base/browse.html', context)
 
 def morePosts(request, nr, topicid):
-
-
     try:
         badges = request.user.badges.all()
     except:

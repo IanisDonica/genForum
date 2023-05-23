@@ -156,7 +156,7 @@ def chainNoOverlap(*argv):
     chained_list= []
     for arg in argv:
         for i in arg:
-            if not i in chained_list:
+            if i not in chained_list:
                 chained_list.append(i)
 
     chained_list.sort()
