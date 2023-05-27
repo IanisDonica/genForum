@@ -32,14 +32,16 @@ def canUserDeleteComments(request, comments):
 
 
 def badgeDictGenerator(comments, post):
-    badge_dict = {"post": {}, "comments": {}}
-    badge_dict["post"] = User.objects.get(id=post.user.id).badges.all()
+    from ..models import BadgeType
+    badge_dict = {}
     for comment in comments:
         try:
-            badges = User.objects.get(id=comment.user.id).badges.all()
+            user_badge_types = comment.user.badge_set.values_list('badge_type')
+            badges = BadgeType.objects.filter(pk__in=user_badge_types)
         except:
             badges = None
-        badge_dict["comments"][comment.id] = badges
+        badge_dict[comment.id] = badges
+
     return badge_dict
 
 def reactionsCommentGenerator(comments):

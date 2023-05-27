@@ -1,102 +1,116 @@
 {% extends 'main.html' %}
 {% load index_dict %}
 {% block content %}
-
-    <script>
-        arrayindex = ['profile_posts', 'activity', 'posts', 'comments']
-        length = arrayindex.length
-        function switchfunction(arrayindexnum) {
-            i = 0;
-            while (i < length) {
-                if (i != arrayindexnum) {
-                    document.getElementById(arrayindex[i]).style.display = 'none'
-                } else {
-                    document.getElementById(arrayindex[arrayindexnum]).style.display = 'block'
-                }
-                i = i + 1;
+<script>
+    arrayindex = ['profile_posts', 'activity', 'posts', 'comments']
+    length = arrayindex.length
+    function switchfunction(arrayindexnum) {
+        i = 0;
+        while (i < length) {
+            if (i != arrayindexnum) {
+                document.getElementById(arrayindex[i]).style.display = 'none'
+            } else {
+                document.getElementById(arrayindex[arrayindexnum]).style.display = 'block'
             }
+            i = i + 1;
         }
+    }
 
-    </script>
-    <style>
-        .displayNone {
-            display: none;
-        }
-    </style>
+</script>
+<style>
+    .displayNone {
+        display: none;
+    }
+</style>
+<img src="{{ MEDIA_URL }}{{user.avatar}}" alt="">
+<img src="{{ MEDIA_URL }}{{user.background}}" alt="">
+<div style="display: inline-block">
+    {% for badge, badge_type in badge_dict.items %}
+        {% autoescape off %}
+            <div style="display: inline-block" id="badge_{{badge.id}}">
+                {{badge_type.html}}
+                <button hx-post="{% url 'revoke-badge' user.id badge %}" hx-target="#badge_{{badge.id}}" hx-swap="outerHTML">revoke badge</button>
+                <button hx-get="{% url 'modify-badge' badge %}" hx-target="#user-badge-mod">modify badge</button>
+            </div>
+        {% endautoescape %}
+    {% endfor %}
+</div>
+<p>{{user.name}}</p>
+{% if request.user == user %}
+    <a href="{% url 'user-settings' %}">Edit profile</a>
+{% endif %}
+<div id="user-badge-mod">
 
-    {% if request.user == user %} 
-        <a href="{% url 'user-settings' %}">Edit profile</a>
-    {% endif %}
-    <img src="{{ MEDIA_URL }}{{user.avatar}}" alt="">
-    <img src="{{ MEDIA_URL }}{{user.background}}" alt="">
-    <p>{{user.name}}</p>
-
-    <br> 
-    <div class="profile-controls">
-        <button onclick="switchfunction(0)">Profile posts</button>
-        <button onclick="switchfunction(1)"  
-                hx-get="{% url 'profile-activity-get' user.id 1 %}" 
-                hx-target="#activity_inner" 
-                hx-trigger="click once"
-                hx-swap="beforeend">Activity</button>
-        <button onclick="switchfunction(2)"
-                hx-get="{% url 'profile-posts-get' user.id 1 %}" 
-                hx-target="#posts_inner" 
-                hx-trigger="click once"
-                hx-swap="beforeend">Posts</button>
-        <button onclick="switchfunction(3)" 
-                hx-get="{% url 'profile-comments-get' user.id 1 %}" 
-                hx-target="#comments_inner" 
-                hx-trigger="click once"
-                hx-swap="beforeend">Comments</button>
-    </div>
-    <div id="profile_posts">
-        <p>Profile Posts</p>
-        <div>
-            {% for post in profile_posts %}
-                <a href="{% url 'user-profile' post.user.id %}">{{post.user}}</a>
-                <p>{{post.content}}</p>
-                <p>{{post.created}}</p>
-                {% if post.is_deleted %}
-                    <p>This post has been delted by {{post.deleted_by}}</p>
-                {% endif %}
-
-                {% if canUserDeleteProfilePosts|index_dict:post.id %}
-                    <button hx-trigger="click" hx-post="{% url 'delete-profile-post' post.id %}">Delete post</button>
-                {% endif %}
-                <hr>
-            {% endfor %}
-            <br>
-            {% if canUserMakeProfilePost == True %}
-                <form action="" method="POST" >
-                    {% csrf_token %}
-
-                    <input type="text" name="content" placeholder="Write your message here">
-                    <input type="submit" name="make-profile-post" value="post comment">
-                </form>
+</div>
+{% if canUserAddBadge %}
+    <button hx-get="{% url 'add-badge' user.id %}" hx-target="#user-badge-mod">Add Badge</button>
+{% endif %}
+<br>
+<div class="profile-controls">
+    <button onclick="switchfunction(0)">Profile posts</button>
+    <button onclick="switchfunction(1)"
+            hx-get="{% url 'profile-activity-get' user.id 1 %}"
+            hx-target="#activity_inner"
+            hx-trigger="click once"
+            hx-swap="beforeend">Activity</button>
+    <button onclick="switchfunction(2)"
+            hx-get="{% url 'profile-posts-get' user.id 1 %}"
+            hx-target="#posts_inner"
+            hx-trigger="click once"
+            hx-swap="beforeend">Posts</button>
+    <button onclick="switchfunction(3)"
+            hx-get="{% url 'profile-comments-get' user.id 1 %}"
+            hx-target="#comments_inner"
+            hx-trigger="click once"
+            hx-swap="beforeend">Comments</button>
+</div>
+<div id="profile_posts">
+    <p>Profile Posts</p>
+    <div>
+        {% for post in profile_posts %}
+            <a href="{% url 'user-profile' post.user.id %}">{{post.user}}</a>
+            <p>{{post.content}}</p>
+            <p>{{post.created}}</p>
+            {% if post.is_deleted %}
+                <p>This post has been delted by {{post.deleted_by}}</p>
             {% endif %}
 
-        </div>
-    </div>
+            {% if canUserDeleteProfilePosts|index_dict:post.id %}
+                <button hx-trigger="click" hx-post="{% url 'delete-profile-post' post.id %}">Delete post</button>
+            {% endif %}
+            <hr>
+        {% endfor %}
+        <br>
+        {% if canUserMakeProfilePost == True %}
+            <form action="" method="POST" >
+                {% csrf_token %}
 
-    <div id="activity" class="displayNone">
-        <p>Activity</p>
-        <div id="activity_inner">
-        </div>
-        <button id="load-more-button-activy">Load more</button>
-    </div>
+                <input type="text" name="content" placeholder="Write your message here">
+                <input type="submit" name="make-profile-post" value="post comment">
+            </form>
+        {% endif %}
 
-    <div id="posts" class="displayNone">
-        <p>POSTS</p>
-        <div id="posts_inner">
-        </div>
-        <button id="load-more-button-posts">Load more</button>
     </div>
+</div>
 
-    <div id="comments" class="displayNone">
-        <p>Comments</p>
-        <div id="comments_inner">
-        </div>
-        <button id="load-more-button-comments">Load more</button>
+<div id="activity" class="displayNone">
+    <p>Activity</p>
+    <div id="activity_inner">
     </div>
+    <button id="load-more-button-activy">Load more</button>
+</div>
+
+<div id="posts" class="displayNone">
+    <p>POSTS</p>
+    <div id="posts_inner">
+    </div>
+    <button id="load-more-button-posts">Load more</button>
+</div>
+
+<div id="comments" class="displayNone">
+    <p>Comments</p>
+    <div id="comments_inner">
+    </div>
+    <button id="load-more-button-comments">Load more</button>
+</div>
 {% endblock content %}

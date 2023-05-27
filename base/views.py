@@ -1,9 +1,9 @@
 from django.shortcuts import render, redirect
-from .models import Post, ReactionTypes, NotificationSubscribe, Notification, Topic
+from .models import Post, ReactionTypes, NotificationSubscribe, Notification, Topic, Badge, BadgeType
 from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate, login, logout
-from .forms import CustomUserCreationForm, PostForm, UserProfileForm
+from .forms import CustomUserCreationForm, PostForm, UserProfileForm, BadgeAddForm
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -21,8 +21,10 @@ from django.contrib import messages
 import math
 from .utils.generatorsAndUtils import *
 from .utils.context_generators import ContextGenerator
+from .tasks import removebadge
 from django.contrib.contenttypes.models import ContentType
-
+from celery.result import AsyncResult
+import datetime
 
 User = get_user_model()
 
@@ -45,7 +47,8 @@ def home(request):
     user = request.user
     topics = Topic.objects.filter(front_sticky__isnull=False)
     try: 
-        badges = user.badges.all()
+        user_badge_types = user.badge_set.values_list('badge_type')
+        badges = BadgeType.objects.filter(pk__in=user_badge_types)
     except:
         badges = None
 
@@ -87,7 +90,8 @@ def post(request, pk):
     post = Post.objects.get(id=pk)
 
     try:
-        badges = user.badges.all()
+        user_badge_types = user.badge_set.values_list('badge_type')
+        badges = BadgeType.objects.filter(pk__in=user_badge_types)
     except:
         badges = None
 
@@ -165,7 +169,8 @@ def editContent(request, pk, sk):
                 reaction.save()
 
             try:
-                badges = user.badges.all()
+                user_badge_types = user.badge_set.values_list('badge_type')
+                badges = BadgeType.objects.filter(pk__in=user_badge_types)
             except:
                 badges = None
 
@@ -208,7 +213,6 @@ def addReaction(request, pk, sk, tk):
     reaction_types = ReactionTypes.reaction_types_gen()
     if sk == "post":    
         post = Post.objects.get(id=pk)
-        print(backendActionAuth(request, 'add-reaction-post', post))
         if backendActionAuth(request, 'add-reaction-post', post):
 
             reaction_type = ReactionTypes.objects.get(id=tk)
@@ -303,7 +307,8 @@ def moreComments(request, nr, post_id):
     user = request.user
 
     try:
-        badges = user.badges.all()
+        user_badge_types = user.badge_set.values_list('badge_type')
+        badges = BadgeType.objects.filter(pk__in=user_badge_types)
     except:
         badges = None
 
@@ -446,7 +451,8 @@ def editHistory(request, id, type):
     user = request.user
 
     try:
-        badges = request.user.badges.all()
+        user_badge_types = user.badge_set.values_list('badge_type')
+        badges = BadgeType.objects.filter(pk__in=user_badge_types)
     except:
         badges = None
 
@@ -483,7 +489,8 @@ def browse(request, tk):
         canPost = False
 
     try:
-        badges = request.user.badges.all()
+        user_badge_types = user.badge_set.values_list('badge_type')
+        badges = BadgeType.objects.filter(pk__in=user_badge_types)
     except:
         badges = None
 
@@ -536,7 +543,8 @@ def browse(request, tk):
 
 def morePosts(request, nr, topicid):
     try:
-        badges = request.user.badges.all()
+        user_badge_types = user.badge_set.values_list('badge_type')
+        badges = BadgeType.objects.filter(pk__in=user_badge_types)
     except:
         badges = None
 
@@ -636,7 +644,8 @@ def createPost(request, tk):
     user = request.user
 
     try: 
-        badges = user.badges.all()
+        user_badge_types = user.badge_set.values_list('badge_type')
+        badges = BadgeType.objects.filter(pk__in=user_badge_types)
     except:
         badges = None
 
@@ -661,7 +670,8 @@ def userProfile(request, pk):
     user = User.objects.get(id=pk)
 
     try:
-        badges = request.user.badges.all()
+        user_badge_types = user.badge_set.values_list('badge_type')
+        badges = BadgeType.objects.filter(pk__in=user_badge_types)
     except:
         badges = None
 
@@ -684,9 +694,19 @@ def userProfile(request, pk):
 
     canUserMakeProfilePost = backendActionAuth(request, "make-profile-post", None)
     canUserDeleteProfilePosts = canUserDeleteProfilePostsGenerator(request, profile_posts)
+    canUserAddBadge = backendActionAuth(request, "can-user-add-badge", None)
+    canUserModifyBadge = backendActionAuth(request, "can-user-modify-badge", None) and badges
+    canUserRevokeBadge = backendActionAuth(request, "can-user-revoke-badge", None) and badges
+
+    badge_dict = {}
+    for badge in Badge.objects.filter(user=user):
+        badge_dict[badge.id] = badge.badge_type
 
     context = { "user": user,
-    "canUserMakeProfilePost": canUserMakeProfilePost, "profile_posts": profile_posts, "canUserDeleteProfilePosts": canUserDeleteProfilePosts}
+    "canUserMakeProfilePost": canUserMakeProfilePost, "profile_posts": profile_posts,
+    "canUserDeleteProfilePosts": canUserDeleteProfilePosts, "canUserRevokeBadge":canUserRevokeBadge,
+                "canUserModifyBadge": canUserModifyBadge, "canUserAddBadge":canUserAddBadge, "badge_dict": badge_dict
+                }
 
     return render(request, 'base/profile.html', context)
 
@@ -902,7 +922,8 @@ def moveThread(request,post,topic):
 def getTopics(request, post):
 
     try: 
-        badges = request.user.badges.all()
+        user_badge_types = user.badge_set.values_list('badge_type')
+        badges = BadgeType.objects.filter(pk__in=user_badge_types)
     except:
         badges = None
 
@@ -924,3 +945,72 @@ def deleteProfilePost(request, postid):
     response = HttpResponse()
     response['HX-Redirect'] = "/profile/" + str(post.profile.id) + "/"
     return response
+
+def addbadge(request, userid):
+    user = User.objects.get(id=userid)
+    form = BadgeAddForm(user, request.POST)
+    if request.method == "POST":
+        if backendActionAuth(request, "can-user-add-badge", None) and form.is_valid():
+            import datetime
+            cd = form.cleaned_data
+            badge = Badge.objects.create(user=user, badge_type=BadgeType.objects.get(id=cd["badge_type"]), badge_duration=cd["badge_duration"], date_applied=datetime.datetime.now().timestamp())
+            if badge.badge_duration != 0:
+                async_task = removebadge.apply_async((badge.id,), countdown=badge.badge_duration)
+                badge.task_id = async_task.task_id
+                badge.save()
+            messages.info(request, "Badge has been set successfully")
+        else:
+            messages.error(request, "You are not allowed to set badges or there is an error with your form")
+        return redirect('user-profile', userid)
+
+    if request.method == "GET":
+        context = {"form": form, "page": "add"}
+        return render(request, "base/badge_mod.html", context)
+
+def revokebadge(request, userid, badgeid):
+
+    if backendActionAuth(request, "can-user-revoke-badge", None):
+        badge = Badge.objects.get(id=badgeid)
+        if badge.badge_duration != 0:
+            AsyncResult(badge.task_id).revoke()
+        badge.delete()
+        messages.info(request, "Badge successfully deleted")
+        return HttpResponse("")
+    else:
+        messages.error(request, "You are not allowed to delete the badge")
+        response = HttpResponse()
+        response['HX-Redirect'] = "/profile/" + userid + "/"
+        return response
+
+def modifybadge(request, badgeid):
+    badge = Badge.objects.get(id=badgeid)
+    user = badge.user.id
+    if request.method == "POST":
+        form = BadgeAddForm(user, request.POST)
+        if backendActionAuth(request, "can-user-modify-badge", None):
+            if form.is_valid():
+                print("here inside valid form")
+                cd = form.cleaned_data
+                badge.badge_type = BadgeType.objects.get(id=cd["badge_type"])
+                if badge.badge_duration != 0:
+                    AsyncResult(badge.task_id).revoke()
+                badge.badge_duration = cd["badge_duration"]
+                badge.date_applied = datetime.datetime.now().timestamp()
+                if badge.badge_duration != 0:
+                    async_task = removebadge.apply_async((badge.id,), countdown=badge.badge_duration)
+                    badge.task_id = async_task.task_id
+
+                badge.save()
+                messages.info(request, "Badge has been set successfully")
+            else:
+                messages.error(request, "there is an error with your form")
+        else:
+            messages.error(request, "You are not allowed to set badges")
+
+        return redirect('user-profile', badge.user.id)
+
+    if request.method == "GET":
+        form = BadgeAddForm(user, initial={'badge_type': badge.badge_type.id, 'badge_duration': badge.badge_duration})
+        context = {"form": form, "badge": badge.id, "page": "modify"}
+
+        return render(request, "base/badge_mod.html", context)

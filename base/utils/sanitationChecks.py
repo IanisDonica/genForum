@@ -8,8 +8,11 @@ def backendActionAuth(request, action, id):
     #True + False = False
     #Null = False
     user = request.user
+    from ..models import BadgeType
+
     try:
-        badges = User.objects.get(id=request.user.id).badges.all()
+        user_badge_types = user.badge_set.values_list('badge_type')
+        badges = BadgeType.objects.filter(pk__in=user_badge_types)
     except:
         badges = None
 
@@ -122,3 +125,20 @@ def backendActionAuth(request, action, id):
             if badge_checker(badges, "unpin_posts_perm") and id.is_pinned:
                 return True
             return False
+
+        case 'can-user-add-badge':
+            if badge_checker(badges, "add_badges_perm") or user.is_superuser:
+                return True
+            return False
+
+        case 'can-user-modify-badge':
+            if badge_checker(badges, "modify_badges_perm") or user.is_superuser:
+                print("here")
+                return True
+            return False
+
+        case 'can-user-revoke-badge':
+            if badge_checker(badges, "revoke_badges_perm") or user.is_superuser:
+                return True
+            return False
+

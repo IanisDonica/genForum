@@ -1,4 +1,5 @@
 from .generatorsAndUtils import *
+from ..models import Badge
 def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
                      post_reaction_check=False, post_badge_check=False, comment_badge_check=False,
                      pag_comments_check=False, make_comment_check=False, comment_history_check=False,
@@ -93,7 +94,6 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
 
         if comment_badge_check:
             badgeDict = badgeDictGenerator(comments, var["post"])
-
             context_tmp = {
                 "badgeDict": badgeDict
             }
@@ -123,9 +123,11 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
     if post_badge_check or comment_badge_check:
         # Done so incase there will ever be a thing as a badge type for something like adding nadges
         # without thw django admin panne;
-        if post_badge_check:
-            post_badges = var["post"].user.badges.all()
 
+        #I dont know what I meant by this??? Also wonderfull grammar
+        if post_badge_check:
+            post_badges = Badge.objects.filter(user=var["post"].user)
+            print(post_badges)
             context_tmp = {
                 "post_badges": post_badges
             }

@@ -1,0 +1,21 @@
+{% if page == "add" %}
+<form method="POST" action="{% url 'add-badge' user.id %}">
+{% elif page == "modify" %}
+<form method="POST" action="{% url 'modify-badge' badge %}">
+{% endif %}
+
+    {% csrf_token %}
+    <br>
+    {{form.badge_type}}
+    <br>
+    <p>Time in seconds, 0 for forever</p>
+    {{ form.badge_duration }}
+    <br>
+    {% for erorr in form.non_field_errors %}
+
+        {{erorr}}
+
+    {% endfor %}
+    <br>
+    <input type="submit" value="Register">
+</form>

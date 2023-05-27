@@ -31,8 +31,9 @@ class CustomUserManager(UserManager):
         extra_fields.setdefault('is_active', True)
         
         return self._create_user(email, password, name, **extra_fields)
-        
+
 class BadgeType(models.Model):
+    name = models.CharField(max_length=200, null=True, default=None)
     html = models.TextField(max_length=9999, unique=True)
 
     inheritance = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True)
@@ -56,7 +57,9 @@ class BadgeType(models.Model):
     delete_profile_posts = models.BooleanField(default=None, null=True)
     pin_posts_perm = models.BooleanField(default=None, null=True)
     unpin_posts_perm = models.BooleanField(default=None, null=True)
-
+    add_badges_perm = models.BooleanField(default=None, null=True)
+    modify_badges_perm = models.BooleanField(default=None, null=True)
+    revoke_badges_perm = models.BooleanField(default=None, null=True)
 
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(blank=True, default='', unique=True)
@@ -75,8 +78,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_verified = models.BooleanField(default=False)
 
     register = models.CharField(max_length=255, default='', blank=True)
-
-    badges = models.ManyToManyField(BadgeType, blank=True)
 
     objects = CustomUserManager()
 
@@ -104,12 +105,22 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.name
 
+class Badge(models.Model):
+    badge_type = models.ForeignKey(BadgeType, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    date_applied = models.PositiveIntegerField()
+    badge_duration = models.PositiveIntegerField(default=None, null=True) #0 for infinite duration
+    task_id = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        unique_together = ['badge_type', 'user']
+
+
 class FrontStickyType(models.Model):
     name = models.CharField(max_length=200)
 
     def __str__(self):
         return self.name
-
 class Topic(models.Model):
     name = models.CharField(max_length=200)
     parrent_topic = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)

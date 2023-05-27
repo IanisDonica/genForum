@@ -36,7 +36,7 @@
 <a href="{% url 'user-profile' post.user.id%}">{{post.user}}</a>
 {% autoescape off %}
     {% for badge in post_badges %}
-        {{badge.html}}
+        {{badge.badge_type.html}}
     {% endfor %}
 {% endautoescape %}
 {% if post.is_locked %}
