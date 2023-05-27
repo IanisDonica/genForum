@@ -39,6 +39,7 @@ class BadgeType(models.Model):
     inheritance = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True)
 
     make_comments = models.BooleanField(default=None, null=True)
+    make_posts_perm = models.BooleanField(default=None, null=True)
     edit_comments_perm = models.BooleanField(default=None, null=True)
     edit_posts_perm = models.BooleanField(default=None, null=True)
     delete_comments_perm = models.BooleanField(default=None, null=True)
@@ -126,6 +127,7 @@ class Topic(models.Model):
     parrent_topic = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
     is_locked = models.BooleanField(default=False)
     view_permisions = models.ManyToManyField(BadgeType, blank=True)
+    banned_users_allowed = models.BooleanField(default=False)
     front_sticky = models.ForeignKey('FrontStickyType', on_delete=models.SET_NULL, null=True, blank=True)
     
     def __str__(self):
@@ -135,7 +137,7 @@ class Topic(models.Model):
         return self._meta.model_name
 
 class Post(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     parrent_topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(max_length=200)
     content = models.TextField(null=True)

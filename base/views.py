@@ -268,7 +268,8 @@ def removeReaction(request, id, type):
         except:
             return HttpResponse("")
 
-        if backendActionAuth(request, 'remove-reaction', reaction):
+        if backendActionAuth(request, 'remove-reaction-post', reaction):
+            print("here")
             for notification in Notification.objects.filter(object_id=reaction.id, content_type=ContentType.objects.get_for_model(reaction).id, seen=False, action_type="reaction_on_subscribed_post"):
                 notification.delete()
 
@@ -290,7 +291,7 @@ def removeReaction(request, id, type):
         except:
             return HttpResponse("")
 
-        if backendActionAuth(request, 'remove-reaction', reaction):
+        if backendActionAuth(request, 'remove-reaction-comment', reaction):
             for notification in Notification.objects.filter(object_id=reaction.id, content_type=ContentType.objects.get_for_model(reaction).id, seen=False, action_type="reaction_on_subscribed_comment"):
                 notification.delete()
 
@@ -482,19 +483,14 @@ def editHistory(request, id, type):
 # ------------------------- #
 
 def browse(request, tk):
-    #yeah no this wont work
-    if request.user.is_authenticated:
-        canPost = True
-    else:
-        canPost = False
-
+    topic = Topic.objects.get(pk=tk)
     try:
         user_badge_types = user.badge_set.values_list('badge_type')
         badges = BadgeType.objects.filter(pk__in=user_badge_types)
     except:
         badges = None
 
-    if tk == None or not BadgeTopicAndPostChecker(badges, Topic.objects.get(pk=tk)):
+    if tk == None or not BadgeTopicAndPostChecker(badges, topic):
         messages.info(request, 'You cant acces this page')
         return redirect('home')
 
@@ -533,6 +529,7 @@ def browse(request, tk):
     back_range = range(paginated_posts.num_pages - settings.NAV_BAR_AMOUNT, paginated_posts.num_pages)
 
     indentation_range = chainNoOverlap(front_range, middle_range, back_range)
+    canPost = backendActionAuth(request, "can-user-make-post", topic)
 
     context = {"topics": topics, "canPost": canPost, 't': tk,
                "pinned_posts": pinned_posts,"indentation_range": indentation_range,
@@ -653,7 +650,7 @@ def createPost(request, tk):
     
     if request.method == "POST":
         form = PostForm(request.POST)  
-        if form.is_valid() and BadgeTopicAndPostChecker(badges, Topic.objects.get(id=tk)):
+        if form.is_valid() and backendActionAuth(request, 'can-user-make-post', Topic.objects.get(id=tk)):
             post = form.save(commit=False)
             post.user = user
             post.parrent_topic = Topic.objects.get(id=t)

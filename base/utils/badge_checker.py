@@ -1,6 +1,6 @@
 def badge_checker(badges, check_type):
     if not badges:
-        return False
+        return None
 
     def search_tree(current_dir):
         permision = None

@@ -16,48 +16,69 @@ def backendActionAuth(request, action, id):
     except:
         badges = None
 
-    match action: 
+    match action:
+        case 'can-user-make-post':
+            if ( badge_checker(badges, "make_posts_perm") != False or id.banned_users_allowed ) and BadgeTopicAndPostChecker(badges, id) and user.is_verified:
+                return True
+            return False
+
         case 'edit-comment':
-            if user == id.user or badge_checker(badges, "edit_comments_perm") and badge_checker(badges, "edit_comments_perm") != False and user.is_verified:
+            if user == id.user or badge_checker(badges, "edit_comments_perm") and ( badge_checker(badges, "edit_comments_perm") != False or id.post.parrent_topic.banned_users_allowed ) and user.is_verified:
                 return True
             return False
 
         case 'edit-post':
-            if user == id.user or badge_checker(badges, "edit_posts_perm") and badge_checker(badges, "edit_posts_perm") != False and user.is_verified:
+            if ( user == id.user and badge_checker(badges, "edit_posts_perm") != False ) or badge_checker(badges, "edit_posts_perm") or ( user == id.user and id.parrent_topic.banned_users_allowed ) and user.is_verified:
                 return True
             return False
 
         case 'add-reaction-comment':
-            if not user.is_verified or badge_checker(badges, "make_reactions_comments") == False:
-                return False
-
-            if len(Reaction.objects.filter(comment=id, user=user)):
-                return False
+            if user.is_verified and ( badge_checker(badges, "make_reactions_comments") != False or ( id.post.parrent_topic.banned_users_allowed and id.post.user == user )):
+                try:
+                    Reaction.objects.get(comment=id, user=user)
+                    return False
+                except:
+                    return True
             else:
-                return True
+                return False
 
         case 'add-reaction-post':
-            if not user.is_verified or badge_checker(badges, "make_reactions_post") == False:
+            if user.is_verified and ( badge_checker(badges, "make_reactions_post") != False or ( id.parrent_topic.banned_users_allowed and id.user == user )):
+                try:
+                    Reaction.objects.get(post=id, user=user)
+                    return False
+                except:
+                    return True
+            else:
                 return False
-            
-            try:
-                Reaction.objects.get(post=id, user=user)
-                return False
-            except:
-                return True
 
-        case 'remove-reaction':
-            if user == id.user and badge_checker(badges, "make_reactions_post") != False:
-                return True
-            return False
+        case 'remove-reaction-post':
+            if user.is_verified and ( badge_checker(badges, "make_reactions_post") != False or ( id.post.parrent_topic.banned_users_allowed and id.post.user == user )):
+                try:
+                    Reaction.objects.get(id=id.id)
+                    return True
+                except:
+                    return False
+            else:
+                return False
+
+        case 'remove-reaction-comment':
+            if user.is_verified and ( badge_checker(badges, "make_reactions_comments") != False or ( id.comment.post.parrent_topic.banned_users_allowed and id.comment.post.user == user )):
+                try:
+                    Reaction.objects.get(id=id.id)
+                    return True
+                except:
+                    return False
+            else:
+                return False
 
         case 'make-comment':
-            if user.is_authenticated and (id.is_locked == False or badge_checker(badges, "make_comments_on_locked_perm")) and BadgeTopicAndPostChecker(badges, id) and badge_checker(badges, "make_comments") != False:
+            if user.is_verified and (id.is_locked == False or badge_checker(badges, "make_comments_on_locked_perm")) and BadgeTopicAndPostChecker(badges, id) and ( badge_checker(badges, "make_comments") != False or ( id.parrent_topic.banned_users_allowed and id.user == user)):
                 return True
             return False
 
         case 'make-profile-post':
-            if user.is_authenticated and badge_checker(badges, "make_profile_posts") != False:
+            if user.is_verified and badge_checker(badges, "make_profile_posts") != False:
                 return True
             return False
         
@@ -67,12 +88,13 @@ def backendActionAuth(request, action, id):
             return False
         
         case 'can-user-delete-comment':
-            if user == id.user or badge_checker(badges, "delete_comments_perm") and not id.is_deleted and BadgeTopicAndPostChecker(badges, id.post):
+            if (user == id.user or badge_checker(badges, "delete_comments_perm")) and ( badge_checker(badges, "delete_comments_perm") != False or (id.post.parrent_topic.banned_users_allowed and id.user == user )) and not id.is_deleted and BadgeTopicAndPostChecker(badges, id.post):
                 return True
             return False
-        
+
+
         case 'can-user-delete-post':
-            if user == id.user or badge_checker(badges, "delete_post_perm") and not id.is_deleted and BadgeTopicAndPostChecker(badges, id):
+            if (user == id.user or badge_checker(badges, "delete_post_perm")) and ( badge_checker(badges, "delete_post_perm") != False or (id.parrent_topic.banned_users_allowed and id.user == user )) and not id.is_deleted and BadgeTopicAndPostChecker(badges, id):
                 return True
             return False
 
@@ -133,7 +155,6 @@ def backendActionAuth(request, action, id):
 
         case 'can-user-modify-badge':
             if badge_checker(badges, "modify_badges_perm") or user.is_superuser:
-                print("here")
                 return True
             return False
 

@@ -90,7 +90,7 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
 
         if delete_comments_check:
             canUserDeleteCommentsDict = canUserDeleteComments(var["request"], comments)
-            context["canUserDeletCommentsDict"] = canUserDeleteCommentsDict
+            context["canUserDeleteCommentsDict"] = canUserDeleteCommentsDict
 
         if comment_badge_check:
             badgeDict = badgeDictGenerator(comments, var["post"])
