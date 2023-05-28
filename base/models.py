@@ -109,9 +109,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 class Badge(models.Model):
     badge_type = models.ForeignKey(BadgeType, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    date_applied = models.PositiveIntegerField()
-    badge_duration = models.PositiveIntegerField(default=None, null=True) #0 for infinite duration
-    task_id = models.CharField(max_length=100, blank=True)
+    date_applied = models.DateTimeField(auto_now=True)
+    badge_duration = models.DurationField(default=None, null=True) #0 for infinite duration
 
     class Meta:
         unique_together = ['badge_type', 'user']

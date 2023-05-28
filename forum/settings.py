@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'sorl.thumbnail',
     'django_cleanup.apps.CleanupConfig',
     'widget_tweaks',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -149,3 +150,6 @@ POST_PAG_AMOUNT = 2
 PAG_AMOUNT = 4
 NAV_BAR_AMOUNT = 2
 NAV_BAR_AMOUNT_2 = 1
+
+#The amount of time between each recheck for expired badges
+PERIODIC_TAKSK_INTERVAL = 60

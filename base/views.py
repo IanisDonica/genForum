@@ -21,7 +21,6 @@ from django.contrib import messages
 import math
 from .utils.generatorsAndUtils import *
 from .utils.context_generators import ContextGenerator
-from .tasks import removebadge
 from django.contrib.contenttypes.models import ContentType
 from celery.result import AsyncResult
 import datetime
@@ -950,11 +949,11 @@ def addbadge(request, userid):
         if backendActionAuth(request, "can-user-add-badge", None) and form.is_valid():
             import datetime
             cd = form.cleaned_data
-            badge = Badge.objects.create(user=user, badge_type=BadgeType.objects.get(id=cd["badge_type"]), badge_duration=cd["badge_duration"], date_applied=datetime.datetime.now().timestamp())
-            if badge.badge_duration != 0:
-                async_task = removebadge.apply_async((badge.id,), countdown=badge.badge_duration)
-                badge.task_id = async_task.task_id
-                badge.save()
+            Badge.objects.create(
+                user=user,
+                badge_type=BadgeType.objects.get(id=cd["badge_type"]),
+                badge_duration=datetime.timedelta(seconds=cd["badge_duration"]),
+            )
             messages.info(request, "Badge has been set successfully")
         else:
             messages.error(request, "You are not allowed to set badges or there is an error with your form")
@@ -968,8 +967,6 @@ def revokebadge(request, userid, badgeid):
 
     if backendActionAuth(request, "can-user-revoke-badge", None):
         badge = Badge.objects.get(id=badgeid)
-        if badge.badge_duration != 0:
-            AsyncResult(badge.task_id).revoke()
         badge.delete()
         messages.info(request, "Badge successfully deleted")
         return HttpResponse("")
@@ -986,17 +983,9 @@ def modifybadge(request, badgeid):
         form = BadgeAddForm(user, request.POST)
         if backendActionAuth(request, "can-user-modify-badge", None):
             if form.is_valid():
-                print("here inside valid form")
                 cd = form.cleaned_data
                 badge.badge_type = BadgeType.objects.get(id=cd["badge_type"])
-                if badge.badge_duration != 0:
-                    AsyncResult(badge.task_id).revoke()
-                badge.badge_duration = cd["badge_duration"]
-                badge.date_applied = datetime.datetime.now().timestamp()
-                if badge.badge_duration != 0:
-                    async_task = removebadge.apply_async((badge.id,), countdown=badge.badge_duration)
-                    badge.task_id = async_task.task_id
-
+                badge.badge_duration = datetime.timedelta(cd["badge_duration"])
                 badge.save()
                 messages.info(request, "Badge has been set successfully")
             else:
