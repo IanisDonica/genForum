@@ -167,7 +167,7 @@ class Post(models.Model):
         ordering = ['-updated', '-created']
 
     def __str__(self):
-        return self.content
+        return self.name
 
     def shortContent(self):
         return self.content[:30]
