@@ -8,6 +8,15 @@ def backendActionAuth(request, action, id):
     #True + False = False
     #Null = False
     user = request.user
+
+    #Anonymous user does not have these properties, so we gotta make sure they have them :)
+    try:
+        user.is_verified
+        user.is_superuser
+    except:
+        user.is_verified = False
+        user.is_superuser = False
+
     from ..models import BadgeType
 
     try:

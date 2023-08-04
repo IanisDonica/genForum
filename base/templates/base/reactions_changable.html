@@ -1,22 +1,32 @@
+<div id="messages" hx-swap-oob="innerHTML" style="display:none;">
+    {% include 'messages.html' %}
+</div>
+
 {% if item == 'post' %}
     {% for type, list in reactions_post_dict.items %}
     <div>
         <p>{{list|length}} - <img class="react-button" src="{{ MEDIA_URL }}{{type.image}}"></p>
     </div>
     {% endfor %}
-    {% if canUserReactPost == True %}
-    {% for reaction_type in reaction_types %}
-        <form hx-post="{% url 'add-reaction' post.id 'post' reaction_type.id %}" hx-target="#reactions_post" class="reactions">
-            {% csrf_token %}                  
-            <input class="react-button" style="background-image: url({{ MEDIA_URL }}{{reaction_type.image}})" type="submit" name="add-reaction-post" value="{{reaction.1}}">
-        </form>
-    {% endfor %}
-    {% elif canUserReactPost == 'reaction_in_place' %}
-    <!--Reaction Controlls when the user can't react-->
-        <form hx-post="{% url 'remove-reaction' post.id 'post' %}" hx-target="#reactions_post">
-    {% csrf_token %}
-    <input type="submit" value="Remove Reaction">
-    </form> 
+    {% if canUserReactPost %}
+    <!-- If the code in here is executed then that means that
+    there is already a reaction or the user already has a reaction
+    both values are not zero-->
+        {% if canUserReactPost == True %}
+            {% for reaction_type in reaction_types %}
+                <form hx-post="{% url 'add-reaction' post.id 'post' reaction_type.id %}" hx-target="#reactions_post" class="reactions">
+                    {% csrf_token %}
+                    <input class="react-button" style="background-image: url({{ MEDIA_URL }}{{reaction_type.image}})" type="submit" name="add-reaction-post" value="{{reaction.1}}">
+                </form>
+            {% endfor %}
+        {% else %}
+            <!--Reaction Controlls when the user can't react,
+             the reaction is inside the canUserReactPost so its still true but not == true-->
+                <form hx-post="{% url 'remove-reaction' post.id 'post' %}" hx-target="#reactions_post">
+            {% csrf_token %}
+            <input type="submit" value="Remove Reaction">
+            </form>
+        {% endif %}
     {% endif %}
 {% elif item == 'comment' %}
 <!--Reactions-->
@@ -26,7 +36,7 @@
         </div>
     {% endfor %}
     <!--Reactions controll-->
-    {% if request.user.is_authenticated %}
+    {% if canUserReactComment %}
         <!--Reaction Controlls when the user can react-->
         {% if canUserReactComment == True %}
             {% for reaction_type in reaction_types %}

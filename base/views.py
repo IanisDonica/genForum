@@ -24,6 +24,7 @@ from .utils.context_generators import ContextGenerator
 from django.contrib.contenttypes.models import ContentType
 from celery.result import AsyncResult
 import datetime
+from .messages import *
 
 User = get_user_model()
 
@@ -73,9 +74,6 @@ def home(request):
 # -- /post/ stuff -- #
 # ------------------ #
 
-# ---- Functions --- #
-            
-
 # ---- Requests --- #
 pag_amount = settings.PAG_AMOUNT
 navbar_ammount = settings.NAV_BAR_AMOUNT
@@ -94,8 +92,8 @@ def post(request, pk):
     except:
         badges = None
 
-    if not backendActionAuth(request, 'can-user-see-post', post):
-        messages.info(request, 'You cant access this page')
+    if not backendActionAuth(request, 'can-user-see-post', post) or post.profile_id:
+        messages.error(request, ERR_POSTVIEW_DENY % user.name)
         return redirect('home')
 
     context = ContextGenerator(locals(), comments_check=True, comment_reaction_check=True,
@@ -129,16 +127,16 @@ def addComment(request, pk):
         except:
             pass
         try:
-            NotificationSubscribe.objects.create(
-                user=request.user, content_object=comment,
-            )
+            NotificationSubscribe.objects.create(user=request.user, content_object=comment,)
         except: 
             pass
-
-
+        messages.success(request, SUC_COMADD_ACEPT % post.name)
     else:
-        messages.info(request, "You are not allowed to add this comment")
+        messages.error(request, ERR_COMADD_DENY % post.name)
 
+
+    #TODO Make is so it redirect to the comment made not just the post
+    #TODO ^ is already done somwhere in the code
     return redirect("post", pk)
 
 
@@ -178,7 +176,11 @@ def editContent(request, pk, sk):
             index = math.ceil((item_nr + 1 )/pag_amount)
             id = item.post.id
 
+            messages.success(request, SUC_COMEDIT_ACEPT)
             return redirect('/post/' + str(id) + "/?index=" + str(index) + "#" + str(item2.id))
+        else:
+            messages.error(request, ERR_COMEDIT_DENY % item.content[:15])
+            return redirect('/post/' + str(item.post.id) + "/")
 
     elif sk == "post":
         item = Post.objects.get(id=pk)
@@ -202,9 +204,11 @@ def editContent(request, pk, sk):
                 reaction.post = item2
                 reaction.save()
 
-            id = pk
+            messages.success(request, SUC_POSTEDIT_ACEPT)
+        else:
+            messages.error(request, ERR_POSTEDIT_DENY % item.name)
 
-        return redirect("post", id)
+        return redirect("post", pk)
 
 @require_http_methods(['POST'])
 def addReaction(request, pk, sk, tk):
@@ -225,12 +229,21 @@ def addReaction(request, pk, sk, tk):
                 except:
                     pass
 
+            messages.success(request, SUC_REACTADDPOST_ACEPT)
+            canUserReactPost = "reaction_in_place"
+
+        else:
+            #User cannot react, no need to redirect them to another page,
+            #just remove their reaction check and notify them about the error
+            messages.error(request, ERR_REACTADDPOST_DENY)
+            canUserReactPost = False
+
         reactions_post_dict = reactionsPostGenerator(post)
-        canUserReactPost = "reaction_in_place"
+        context = {"reactions_post_dict": reactions_post_dict, "canUserReactPost": canUserReactPost,
+                   "reaction_types": reaction_types, "item": "post", "post": post,
+                   "canUserReactPost": canUserReactPost}
 
-
-        context = {"reactions_post_dict": reactions_post_dict,"canUserReactPost": canUserReactPost, "reaction_types":reaction_types, "item": "post", "post": post, "canUserReactPost": canUserReactPost}
-        return render(request, 'base/reactions_changable.html', context)   
+        return render(request, 'base/reactions_changable.html', context)
     
     if sk == "comment":
         comment = Comment.objects.get(id=pk)
@@ -247,11 +260,16 @@ def addReaction(request, pk, sk, tk):
                 except:
                     pass
 
-            
-        reactions_single_comment = singleReactionCommentGenerator(comment)
-        canUserReactComment = False
+            messages.success(request, SUC_REACTADDCOM_ACEPT)
+        else:
+            messages.success(request, ERR_REACTADDCOM_DENY % comment.content[:15])
 
-        context = {"reactions_single_comment": reactions_single_comment, "canUserReactComment": canUserReactComment, "reaction_types":reaction_types, "item": "comment", "comment":comment}
+        reactions_single_comment = singleReactionCommentGenerator(comment)
+        canUserReactComment = canUserReactSingleCommentFunction(user, comment)
+
+        context = {"reactions_single_comment": reactions_single_comment, "canUserReactComment": canUserReactComment,
+                   "reaction_types": reaction_types, "item": "comment", "comment": comment}
+
         return render(request, 'base/reactions_changable.html', context)
 
 @require_http_methods(['POST'])
@@ -268,11 +286,13 @@ def removeReaction(request, id, type):
             return HttpResponse("")
 
         if backendActionAuth(request, 'remove-reaction-post', reaction):
-            print("here")
             for notification in Notification.objects.filter(object_id=reaction.id, content_type=ContentType.objects.get_for_model(reaction).id, seen=False, action_type="reaction_on_subscribed_post"):
                 notification.delete()
 
-            reaction.delete()       
+            reaction.delete()
+            messages.success(request, SUC_REACTDELPOST_ACEPT)
+        else:
+            messages.success(request, ERR_REACTDELPOST_DENY % post.name)
 
         
         reactions_post_dict = reactionsPostGenerator(post)
@@ -293,8 +313,10 @@ def removeReaction(request, id, type):
         if backendActionAuth(request, 'remove-reaction-comment', reaction):
             for notification in Notification.objects.filter(object_id=reaction.id, content_type=ContentType.objects.get_for_model(reaction).id, seen=False, action_type="reaction_on_subscribed_comment"):
                 notification.delete()
-
-            reaction.delete()    
+            reaction.delete()
+            messages.success(request, SUC_REACTDELCOM_ACEPT)
+        else:
+            messages.error(request, ERR_REACTDELCOM_DENY % comment.content[:15])
 
         reactions_single_comment = singleReactionCommentGenerator(comment)
         canUserReactComment = canUserReactSingleCommentFunction(user, comment)
@@ -312,84 +334,113 @@ def moreComments(request, nr, post_id):
     except:
         badges = None
 
-    post = Post.objects.get(id=post_id)
+    try:
+        post = Post.objects.get(id=postid)
+    except:
+        messages.info(request, ERR_POSTEXIST_DENY % postid)
+        response = HttpResponse()
+        response['HX-Redirect'] = ""
 
-    if not backendActionAuth(request, 'can-user-see-post', post):
-        messages.info(request, 'You cant access this page')
-        return redirect('home')
+        return response
 
-    context = ContextGenerator(locals(), comments_check=True, comment_reaction_check=True,
-                               comment_badge_check=True, pag_comments_check=True,
-                               make_comment_check=True, comment_history_check=True,
-                               edit_comments_check=True, delete_comments_check=True,
-                               )
+    if backendActionAuth(request, 'can-user-see-post', post):
+        context = ContextGenerator(locals(), comments_check=True, comment_reaction_check=True,
+                                   comment_badge_check=True, pag_comments_check=True,
+                                   make_comment_check=True, comment_history_check=True,
+                                   edit_comments_check=True, delete_comments_check=True,
+                                   )
 
-    context = context | {"post": post}
+        context = context | {"post": post}
 
-    return render(request, 'base/comments.html', context)
+        return render(request, 'base/comments.html', context)
+    else:
+        #This shouldn't happen
+        messages.error(request, ERR_MORECOMVIEW_DENY)
+        return HttpResponse("")
 
 @require_http_methods(['POST'])
 def deleteComment(request, commentid):
-    
-    comment = Comment.objects.get(pk=commentid)
+
+    try:
+        comment = Comment.objects.get(pk=commentid)
+    except:
+        messages.info(request, ERR_COMEXIST_DENY % commentid)
+        response = HttpResponse()
+        response['HX-Redirect'] = ""
+
+        return response
+
 
     if backendActionAuth(request, 'can-user-delete-comment', comment):
         comment.is_deleted = True
         comment.deleted_by = request.user
         comment.save()
+
+        messages.success(request, SUC_COMDEL_ACEPT)
+
         response = HttpResponse()
         response['HX-Redirect'] = "/post/" + str(comment.post.id) + "/"
         return response
     else:
-        messages.info(request, 'You cant delete this comment')
+        messages.info(request, ERR_COMDEL_DENY % comment.content[:15])
         response = HttpResponse()
-        response['HX-Redirect'] = ""
+        response['HX-Redirect'] = "/post/" + str(comment.post.id) + "/"
         return response
 
 def deletePost(request, postid):
-    post = Post.objects.get(pk=postid)
+    try:
+        post = Post.objects.get(id=postid)
+    except:
+        messages.info(request, ERR_POSTEXIST_DENY % postid)
+        response = HttpResponse()
+        response['HX-Redirect'] = ""
+
+        return response
 
     if backendActionAuth(request, 'can-user-delete-post', post):
         post.is_deleted = True
         post.deleted_by = request.user
         post.save()
+
+        messages.success(request, SUC_POSTDEL_ACEPT % post.name)
     else:
-        messages.info(request, 'You cant delete this post')
+        messages.error(request, ERR_POSTDEL_DENY % post.name)
 
     response = HttpResponse()
-    response['HX-Redirect'] = ""
+    response['HX-Redirect'] = "/post/" + str(post.id) + "/"
 
     return response
     
 
 @require_http_methods(['POST'])
 def lockPost(request, postid):
-    
     try:
         post = Post.objects.get(id=postid)
     except:
-        messages.info(request, "Post with the id of " + str(postid) + " does not exist")
+        messages.info(request, ERR_POSTEXIST_DENY % postid)
         response = HttpResponse()
         response['HX-Redirect'] = ""
-        
+
         return response
 
-    if backendActionAuth(request, "can-user-lock-posts" ,post):
+    if backendActionAuth(request, "can-user-lock-posts", post):
         post.is_locked = True
         post.save()
+
+        messages.success(request, SUC_POSTLOCK_ACEPT)
 
         response = HttpResponse()
         response['HX-Redirect'] = "/post/" + str(postid) + '/'
         return response
     else:
-        messages.info(request, "You do not have permision to lock this post")
+        messages.error(request, ERR_POSTLOCK_DENY)
 
 
 def postPining(request, type, postid):
     try:
         post = Post.objects.get(id=postid)
     except:
-        messages.info(request, "Post with the id of " + str(postid) + " does not exist")
+        messages.info(request, ERR_POSTEXIST_DENY % postid)
         response = HttpResponse()
         response['HX-Redirect'] = ""
 
@@ -400,25 +451,29 @@ def postPining(request, type, postid):
             post.is_pinned = True
             post.save()
 
+            messages.success(request, SUC_POSTPIN_ACEPT)
+
             response = HttpResponse()
             response['HX-Redirect'] = "/post/" + str(postid) + '/'
             return response
         else:
-            messages.info(request, "You do not have permision to pin this post")
+            messages.error(request, ERR_POSTPIN_DENY)
 
     elif type == "unpin":
         if backendActionAuth(request, "can-user-unpin-posts", post):
             post.is_pinned = False
             post.save()
 
+            messages.success(request, SUC_POSTUPIN_ACEPT)
+
             response = HttpResponse()
             response['HX-Redirect'] = "/post/" + str(postid) + '/'
             return response
         else:
-            messages.info(request, "You do not have permision to unpin this post")
+            messages.error(request,ERR_POSTUPIN_DENY)
 
     else:
-        messages.info(request, "Invalid request")
+        messages.error(request, ERR_INVALIDREQ % 1)
 
     response = HttpResponse()
     response['HX-Redirect'] = "/post/" + str(postid) + '/'
@@ -427,34 +482,29 @@ def postPining(request, type, postid):
 
 @require_http_methods(['POST'])
 def unlockPost(request, postid):
-    
     try:
         post = Post.objects.get(id=postid)
     except:
-        messages.info(request, "Post with the id of " + str(postid) + " does not exist")
+        messages.info(request, ERR_POSTEXIST_DENY % postid)
         response = HttpResponse()
         response['HX-Redirect'] = ""
-        
+
         return response
     
-    if backendActionAuth(request, "can-user-lock-posts" ,post):
+    if backendActionAuth(request, "can-user-unlock-posts" ,post):
         post.is_locked = False
         post.save()
+
+        messages.success(request, SUC_POSTULOCK_ACEPT)
 
         response = HttpResponse()
         response['HX-Redirect'] = "/post/" + str(postid) + '/'
         return response
     else:
-        messages.info(request, "You do not have permision to unlock this post")
+        messages.error(request,ERR_POSTULOCK_DENY)
 
 def editHistory(request, id, type):
     user = request.user
-
-    try:
-        user_badge_types = user.badge_set.values_list('badge_type')
-        badges = BadgeType.objects.filter(pk__in=user_badge_types)
-    except:
-        badges = None
 
     if type == "comment":
         if backendActionAuth(request, 'can-user-see-comment-history', user):
@@ -464,7 +514,7 @@ def editHistory(request, id, type):
 
             return render(request, 'base/comment_history.html', context)
         else:
-            messages.error(request, "You do not have permisions to see the comment history")
+            messages.error(request, ERR_COMHIST_DENY)
 
     if type == "post":
         if backendActionAuth(request, 'can-user-see-post-history', user):
@@ -474,7 +524,7 @@ def editHistory(request, id, type):
 
             return render(request, 'base/comment_history.html', context)
         else:
-            messages.error(request, "You do not have permisions to see the post history")
+            messages.error(request, ERR_POSTHIST_DENY)
 
 
 # ------------------------- #
@@ -490,7 +540,7 @@ def browse(request, tk):
         badges = None
 
     if tk == None or not BadgeTopicAndPostChecker(badges, topic):
-        messages.info(request, 'You cant acces this page')
+        messages.info(request, ERR_BROWSE_DENY)
         return redirect('home')
 
     posts = Post.objects.filter(parrent_topic=tk, is_pinned=False)
@@ -551,10 +601,12 @@ def morePosts(request, nr, topicid):
     paginated_posts = Paginator(posts, settings.POST_PAG_AMOUNT)
     page_count = range(paginated_posts.num_pages)
 
+    # nr is the page index, if its over the max it defaults to the max as a fail safe
     try:
         posts = paginated_posts.page(nr)
     except:
         posts = paginated_posts.page(page_count[-1])
+        messages.warning(request, WAR_MPOST_WAR)
 
     pag_next = posts.has_next()
     pag_previous = posts.has_previous()
@@ -588,7 +640,15 @@ def register_user(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            send_activation_email(user, request)
+            #The reason for the try>except block is due to the fact that
+            #the email activation may be not sent due to external factors outside of the code
+
+            try:
+                send_activation_email(user, request)
+                messages.info(request, SUC_EMAIlSEND_ACEPT)
+            except:
+                messages.error(request, ERR_EMAILSEND_DENY)
+
         return redirect('home')
 
             
@@ -600,6 +660,7 @@ def login_user(request):
     page = "login"
 
     if request.user.is_authenticated:
+        messages.error(request, INFO_LOGIN_DENY)
         return redirect('home')
 
     if request.method == "POST":
@@ -609,7 +670,10 @@ def login_user(request):
 
         if user:
             login(request, user)
+            messages.info(request, SUC_LOGIN_ACEPT)
             return redirect('home')
+
+        messages.error(request, ERR_LOGINCRED_DENY)
 
     context = {"page": page}
 
@@ -623,13 +687,16 @@ def activate_user(request, uidb64, token):
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
-    
     except:
-        user = None
+        messages.error(request, ERR_ACTUSERUUID_DENY)
+        return redirect('home')
     
-    if user and generate_token.check_token(user, token):
+    if generate_token.check_token(user, token):
         user.is_verified=True
         user.save()
+        messages.success(request, SUC_ACTUSER_ACEPT)
+    else:
+        messages.error(request, ERR_ACTUSER_DENY)
 
     return redirect('home')
 
@@ -655,9 +722,10 @@ def createPost(request, tk):
             post.parrent_topic = Topic.objects.get(id=t)
             post.save()
             NotificationSubscribe.objects.create(user=user, content_object=post)
+            messages.success(request, SUC_POSTADD_ACEPT)
             return redirect('post', post.id)
         else: 
-            messages.error(request, "You are not allowed to post there or the value provided is wrong")
+            messages.error(request, ERR_POSTADD_DENY)
 
     context = {'form': form}
     return render(request, 'base/create_post.html', context)
@@ -685,8 +753,12 @@ def userProfile(request, pk):
                         Notification.objects.create(user=user, content_object=comment, action_type="comment_on_profile_post",subscribed_object=user)
                     except:
                         pass
-                
-                return redirect('user-profile', pk)
+
+                messages.success(request, SUC_PRFADD_ACEPT)
+            else:
+                messages.error(request, ERR_PRFADD_DENY)
+
+            return redirect('user-profile', pk)
 
     canUserMakeProfilePost = backendActionAuth(request, "make-profile-post", None)
     canUserDeleteProfilePosts = canUserDeleteProfilePostsGenerator(request, profile_posts)
@@ -712,11 +784,7 @@ def profileComments(request, userid, pagamount):
 
     try:
         comments = paginated_comments.page(pagamount)
-        try:
-            test = paginated_comments.page(pagamount + 1)
-            last = False
-        except:
-            last = True
+        last = not paginated_comments.has_next()
     except:
         comments = None
 
@@ -732,11 +800,7 @@ def profilePosts(request, userid, pagamount):
     paginated_posts = Paginator(posts, 4)
     try:
         posts = paginated_posts.page(pagamount)
-        try:
-            test = paginated_posts.page(pagamount + 1)
-            last = False
-        except:
-            last = True
+        last = not paginated_posts.has_next()
     except:
         posts = None
 
@@ -752,11 +816,7 @@ def profileActivity(request, userid, pagamount):
 
     try:
         posts_n_comments = paginated_posts_posts_n_commentes.page(pagamount)
-        try:
-            test = paginated_posts_posts_n_commentes.page(pagamount + 1)
-            last = False
-        except:
-            last = True 
+        last = paginated_posts_posts_n_commentes.has_next()
     except:
         posts_n_comments = None
     
@@ -772,12 +832,13 @@ def userSettings(request):
     if request.method == 'POST': 
         if 'user-settings-save' in request.POST:
             form = UserProfileForm(request.POST, request.FILES, instance=request.user)
-            if form.is_valid():
-                if backendActionAuth(request, 'user-settings-save', form):
-                    form.save()
-                    return redirect('user-profile', request.user.id)
+            if form.is_valid() and backendActionAuth(request, 'user-settings-save', form):
+                form.save()
+                messages.success(request, SUC_USERSET_ACEPT)
+            else:
+                messages.error(request, ERR_USERSET_DENY)
 
-
+            return redirect('user-profile', request.user.id)
 
     context = {'form': form}
 
@@ -849,7 +910,7 @@ def sendResetPassword(request):
         try: 
             user = User.objects.get(email=email)
         except: 
-            messages.error(request, "this email does not exist")
+            messages.error(request, ERR_PASSRES_NOEMAIl % email)
             return redirect('send-reset-password')
 
         current_site = get_current_site(request)
@@ -866,7 +927,7 @@ def sendResetPassword(request):
     
         email.send()
 
-        messages.info(request, "You have been sent a reset password in the mail, please check it and click the link")
+        messages.info(request, SUC_EMAIlSEND_ACEPT)
         return redirect('home')
 
     if request.method=="GET":
@@ -877,9 +938,8 @@ def checkResetToken(request, uid64, token):
         try: 
             uid = force_str(urlsafe_base64_decode(uid64))
             user = User.objects.get(pk=uid)
-
         except: 
-            messages.error(request, "No such user with the UID that was provided, if you get this erorr report it to a administrator")
+            messages.error(request, ERR_RESTOK_INVALIDUID)
             redirect("home")
         
         if password_reset_token.check_token(user, token):
@@ -889,31 +949,32 @@ def checkResetToken(request, uid64, token):
                 login(request, user)
                 user.set_password(password1)
                 user.save()
-                messages.info(request, "Password succesfully reset")
+                messages.success(request, SUC_RESTOK_ACEPT)
                 return redirect('home')
             else:
-                messages.error("Passwords dont match")
+                messages.error(request, ERR_RESTOK_MISSMATCH)
                 return redirect(reverse('reset-password', uid64, token))
         else: 
-            messages.error(request, "Token check failed (most likely due to expired token)")
+            messages.error(request, ERR_RESTOK_DENY)
             return redirect('home')
             
     elif request.method=="GET":
         return render(request, "base/register_login.html", {'page':'reset_post_mail', 'uid': uid64, 'token':token})
 
 def moveThread(request,post,topic):
-    if request.method == "POST":
-        if backendActionAuth(request, 'can-user-move-thread', None):
-           post = Post.objects.get(id=post)
-           topic = Topic.objects.get(id=topic)
-           
-           post.parrent_topic = topic 
-           post.save()
+    if backendActionAuth(request, 'can-user-move-thread', None):
+       post = Post.objects.get(id=post)
+       topic = Topic.objects.get(id=topic)
 
-        else:
-           messages.error(request, "You are not allowed to move threads")
+       post.parrent_topic = topic
+       post.save()
+       messages.success(request, SUC_MVTREAD_ACEPT)
+    else:
+       messages.error(request, ERR_MVTREAD_DENY)
 
-        return HttpResponse('')
+    response = HttpResponse()
+    response['HX-Redirect'] = "/post/" + str(post.id) + "/"
+    return response
 
 def getTopics(request, post):
 
@@ -937,6 +998,9 @@ def deleteProfilePost(request, postid):
         post.is_deleted = True
         post.deleted_by = request.user
         post.save()
+        messages.success(request, SUC_PRFDEL_ACEPT)
+    else:
+        messages.error(request, ERR_PRFDEL_DENY)
 
     response = HttpResponse()
     response['HX-Redirect'] = "/profile/" + str(post.profile.id) + "/"
@@ -954,24 +1018,24 @@ def addbadge(request, userid):
                 badge_type=BadgeType.objects.get(id=cd["badge_type"]),
                 badge_duration=datetime.timedelta(seconds=cd["badge_duration"]),
             )
-            messages.info(request, "Badge has been set successfully")
+            messages.info(request,SUC_BAGADD_ACEPT)
         else:
-            messages.error(request, "You are not allowed to set badges or there is an error with your form")
+            messages.error(request, ERR_BAGADD_DENY)
+
         return redirect('user-profile', userid)
 
-    if request.method == "GET":
+    elif request.method == "GET":
         context = {"form": form, "page": "add"}
         return render(request, "base/badge_mod.html", context)
 
 def revokebadge(request, userid, badgeid):
-
     if backendActionAuth(request, "can-user-revoke-badge", None):
         badge = Badge.objects.get(id=badgeid)
         badge.delete()
-        messages.info(request, "Badge successfully deleted")
+        messages.info(request, SUC_BAGDEL_ACEPT)
         return HttpResponse("")
     else:
-        messages.error(request, "You are not allowed to delete the badge")
+        messages.error(request, ERR_BAGDEL_DENY)
         response = HttpResponse()
         response['HX-Redirect'] = "/profile/" + userid + "/"
         return response
@@ -981,17 +1045,14 @@ def modifybadge(request, badgeid):
     user = badge.user.id
     if request.method == "POST":
         form = BadgeAddForm(user, request.POST)
-        if backendActionAuth(request, "can-user-modify-badge", None):
-            if form.is_valid():
-                cd = form.cleaned_data
-                badge.badge_type = BadgeType.objects.get(id=cd["badge_type"])
-                badge.badge_duration = datetime.timedelta(cd["badge_duration"])
-                badge.save()
-                messages.info(request, "Badge has been set successfully")
-            else:
-                messages.error(request, "there is an error with your form")
+        if backendActionAuth(request, "can-user-modify-badge", None) and form.is_valid():
+            cd = form.cleaned_data
+            badge.badge_type = BadgeType.objects.get(id=cd["badge_type"])
+            badge.badge_duration = datetime.timedelta(cd["badge_duration"])
+            badge.save()
+            messages.info(request,SUC_BAGEDIT_ACEPT)
         else:
-            messages.error(request, "You are not allowed to set badges")
+            messages.error(request, ERR_BAGEDIT_DENY)
 
         return redirect('user-profile', badge.user.id)
 

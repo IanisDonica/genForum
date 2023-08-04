@@ -1,6 +1,10 @@
 {% for item in posts_n_comments %}
     {% if item.model_name == 'post' %}
-        <a href="{% url 'post' item.id %}">{{item.name}}</a>
+        {% if item.profile_id %}
+            <a href="{% url 'user-profile' item.profile_id %}">{{item.shortContent}}</a>
+        {% else %}
+            <a href="{% url 'post' item.id %}">{{item.name}}</a>
+        {% endif %}
     {% else %}
         <a href="{% url 'post' item.post.id %}#{{item.id}}">{{item}}</a>
     {% endif %}

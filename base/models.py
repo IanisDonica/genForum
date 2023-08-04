@@ -167,7 +167,10 @@ class Post(models.Model):
         ordering = ['-updated', '-created']
 
     def __str__(self):
-        return self.name
+        return self.content
+
+    def shortContent(self):
+        return self.content[:30]
 
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

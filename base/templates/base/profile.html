@@ -68,6 +68,7 @@
     <p>Profile Posts</p>
     <div>
         {% for post in profile_posts %}
+        <div id="profile_post{{post.id}}">
             <a href="{% url 'user-profile' post.user.id %}">{{post.user}}</a>
             <p>{{post.content}}</p>
             <p>{{post.created}}</p>
@@ -76,9 +77,10 @@
             {% endif %}
 
             {% if canUserDeleteProfilePosts|index_dict:post.id %}
-                <button hx-trigger="click" hx-post="{% url 'delete-profile-post' post.id %}">Delete post</button>
+                <button hx-trigger="click" hx-post="{% url 'delete-profile-post' post.id %}" hx-target="#profile_post{{post.id}}">Delete post</button>
             {% endif %}
             <hr>
+        </div>
         {% endfor %}
         <br>
         {% if canUserMakeProfilePost == True %}

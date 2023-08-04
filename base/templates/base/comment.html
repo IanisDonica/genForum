@@ -1,3 +1,7 @@
+<div id="messages" hx-swap-oob="innerHTML" style="display:none;">
+    {% include 'messages.html' %}
+</div>
+
 {% load index_dict %}
 
 {% if forloop.last and pag_next %}

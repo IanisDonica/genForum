@@ -72,6 +72,7 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
         if comment_reaction_check:
             reactions_comment_dict = reactionsCommentGenerator(comments)
             canUserReactComment = canUserReactCommentsGenerator(var["request"], comments)
+            print(canUserReactComment)
 
             context_tmp = {
                 "reactions_comment_dict": reactions_comment_dict,
@@ -120,19 +121,13 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
 
         context = context | context_tmp
 
-    if post_badge_check or comment_badge_check:
-        # Done so incase there will ever be a thing as a badge type for something like adding nadges
-        # without thw django admin panne;
+    if post_badge_check:
+        post_badges = Badge.objects.filter(user=var["post"].user)
+        context_tmp = {
+            "post_badges": post_badges
+        }
 
-        #I dont know what I meant by this??? Also wonderfull grammar
-        if post_badge_check:
-            post_badges = Badge.objects.filter(user=var["post"].user)
-            print(post_badges)
-            context_tmp = {
-                "post_badges": post_badges
-            }
-
-            context = context | context_tmp
+        context = context | context_tmp
 
     if edit_post_check:
         canUserEditPost = backendActionAuth(var["request"], "edit-post", var["post"])

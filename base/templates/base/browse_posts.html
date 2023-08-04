@@ -1,3 +1,7 @@
+<div id="messages" hx-swap-oob="innerHTML" style="display:none;">
+    {% include 'messages.html' %}
+</div>
+
 <div id="post_pagination" hx-swap-oob="innerHTML" style="display: none">
     {% with len=page_count|length%}
         {% if pag_previous %}

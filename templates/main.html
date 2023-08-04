@@ -12,15 +12,9 @@
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     {% include 'navbar.html' %}
-    {% if messages %}
-
-        {% for message in messages %}
-
-        <p>{{message}}</p>
-
-        {% endfor %}
-
-    {% endif %}
+    <div id="messages" hx-swap-oob="true">
+        {% include 'messages.html' %}
+    </div>
 
     {% block content %}
 

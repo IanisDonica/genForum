@@ -86,8 +86,8 @@ def canUserReactCommentsGenerator(request, comments):
 def canUserReactPostFunction(request, user, post):
     if not backendActionAuth(request, 'add-reaction-post', post):
         try:
-            Reaction.objects.get(post=post, user=user)
-            return "reaction_in_place"
+            reaction = Reaction.objects.get(post=post, user=user)
+            return reaction
         except:
             return False
     else:
@@ -104,15 +104,16 @@ def singleReactionCommentGenerator(comment):
 
     return reactions_single_comment
 
-def canUserReactSingleCommentFunction(user, comment):
-    if not user.is_authenticated:
-        return False
-    else:
+#TODO Fix this so its usable and uses sanitation checks
+def canUserReactSingleCommentFunction(request, user, comment):
+    if not backendActionAuth(request, 'add-reaction-comment', comment):
         try:
             reaction = Reaction.objects.get(comment=comment, user=user)
             return reaction
         except:
-            return True
+            return False
+    else:
+        return True
 
 def canUserEditCommentsGenerator(request, commnents):
     can_user_edit = {}
@@ -202,7 +203,3 @@ def canUserDeleteProfilePostsGenerator(request, posts):
         canUserDeleteProfilePostsDict[post.id] = backendActionAuth(request, "delete-profile-posts", post)
 
     return canUserDeleteProfilePostsDict
-
-
-
-            
