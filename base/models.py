@@ -3,7 +3,7 @@ from django.contrib.auth.models import UserManager, AbstractBaseUser, Permission
 from django.db.models import UniqueConstraint
 from .utils.formatChecker import ContentTypeRestrictedFileField
 from PIL import Image as im
-from forum.settings import BASE_DIR
+from ..forum.settings import BASE_DIR
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
@@ -202,7 +202,7 @@ class ReactionTypes(models.Model):
     def __str__(self):
         return self.name
 
-    def reaction_types_gen():
+    def reaction_types_gen(self):
         reaction_types = []
         reactions = ReactionTypes.objects.all()
         for reaction in reactions:

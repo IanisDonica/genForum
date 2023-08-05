@@ -203,3 +203,19 @@ def canUserDeleteProfilePostsGenerator(request, posts):
         canUserDeleteProfilePostsDict[post.id] = backendActionAuth(request, "delete-profile-posts", post)
 
     return canUserDeleteProfilePostsDict
+
+
+def reaction_types_gen():
+    reaction_types = []
+    reactions = ReactionTypes.objects.all()
+    for reaction in reactions:
+        reaction_types.append(reaction)
+
+    return reaction_types
+def reaction_types_gen(self):
+    reaction_types = []
+    reactions = ReactionTypes.objects.all()
+    for reaction in reactions:
+        reaction_types.append(reaction)
+
+    return reaction_types

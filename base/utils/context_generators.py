@@ -113,7 +113,7 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
 
             context = context | context_tmp
 
-        reaction_types = ReactionTypes.reaction_types_gen()
+        reaction_types = reaction_types_gen()
 
         context_tmp = {
             "reaction_types": reaction_types
