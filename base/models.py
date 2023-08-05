@@ -3,7 +3,7 @@ from django.contrib.auth.models import UserManager, AbstractBaseUser, Permission
 from django.db.models import UniqueConstraint
 from .utils.formatChecker import ContentTypeRestrictedFileField
 from PIL import Image as im
-from ..forum.settings import BASE_DIR
+from forum.settings import BASE_DIR
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q

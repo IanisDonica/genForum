@@ -72,7 +72,6 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
         if comment_reaction_check:
             reactions_comment_dict = reactionsCommentGenerator(comments)
             canUserReactComment = canUserReactCommentsGenerator(var["request"], comments)
-            print(canUserReactComment)
 
             context_tmp = {
                 "reactions_comment_dict": reactions_comment_dict,
@@ -105,7 +104,7 @@ def ContextGenerator(var, comments_check=False, comment_reaction_check=False,
         if post_reaction_check:
             reactions_post_dict = reactionsPostGenerator(var["post"])
             canUserReactPost = canUserReactPostFunction(var["request"], var["user"], var["post"])
-
+            print(canUserReactPost)
             context_tmp = {
                 "reactions_post_dict": reactions_post_dict,
                 "canUserReactPost": canUserReactPost,

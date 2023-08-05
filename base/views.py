@@ -90,7 +90,7 @@ def post(request, pk):
     except:
         messages.info(request, ERR_POSTEXIST_NULL % pk)
         response = HttpResponse()
-        response['HX-Redirect'] = ""
+        response['HX-Redirect'] = "/"
 
         return response
 
@@ -123,7 +123,7 @@ def addComment(request, pk):
     except:
         messages.info(request, ERR_POSTEXIST_NULL % pk)
         response = HttpResponse()
-        response['HX-Redirect'] = ""
+        response['HX-Redirect'] = "/"
 
         return response
 
@@ -168,7 +168,7 @@ def editContent(request, pk, sk):
         except:
             messages.info(request, ERR_COMEXIST_NULL % pk)
             response = HttpResponse()
-            response['HX-Redirect'] = ""
+            response['HX-Redirect'] = "/"
 
             return response
 
@@ -217,7 +217,7 @@ def editContent(request, pk, sk):
         except:
             messages.info(request, ERR_POSTEXIST_NULL % pk)
             response = HttpResponse()
-            response['HX-Redirect'] = ""
+            response['HX-Redirect'] = "/"
 
             return response
 
@@ -258,7 +258,7 @@ def addReaction(request, pk, sk, tk):
         except:
             messages.info(request, ERR_POSTEXIST_NULL % pk)
             response = HttpResponse()
-            response['HX-Redirect'] = ""
+            response['HX-Redirect'] = "/"
 
             return response
 
@@ -279,7 +279,7 @@ def addReaction(request, pk, sk, tk):
                     pass
 
             messages.success(request, SUC_REACTADDPOST_ACCEPT)
-            canUserReactPost = "reaction_in_place"
+            canUserReactPost = reaction
 
         else:
             # User cannot react, no need to redirect them to another page,
@@ -300,7 +300,7 @@ def addReaction(request, pk, sk, tk):
         except:
             messages.info(request, ERR_COMEXIST_NULL % pk)
             response = HttpResponse()
-            response['HX-Redirect'] = ""
+            response['HX-Redirect'] = "/"
 
             return response
 
@@ -325,7 +325,7 @@ def addReaction(request, pk, sk, tk):
             messages.success(request, ERR_REACTADDCOM_NOPERM % comment.content[:15])
 
         reactions_single_comment = singleReactionCommentGenerator(comment)
-        canUserReactComment = canUserReactSingleCommentFunction(user, comment)
+        canUserReactComment = canUserReactSingleCommentFunction(request, user, comment)
 
         context = {"reactions_single_comment": reactions_single_comment, "canUserReactComment": canUserReactComment,
                    "reaction_types": reaction_types, "item": "comment", "comment": comment}
@@ -344,7 +344,7 @@ def removeReaction(request, id, type):
         except:
             messages.info(request, ERR_POSTEXIST_NULL % id)
             response = HttpResponse()
-            response['HX-Redirect'] = ""
+            response['HX-Redirect'] = "/"
 
             return response
 
@@ -385,16 +385,18 @@ def removeReaction(request, id, type):
                                                             content_type=ContentType.objects.get_for_model(reaction).id,
                                                             seen=False, action_type="reaction_on_subscribed_comment"):
                 notification.delete()
+
             reaction.delete()
             messages.success(request, SUC_REACTDELCOM_ACCEPT)
         else:
             messages.error(request, ERR_REACTDELCOM_NOPERM % comment.content[:15])
 
         reactions_single_comment = singleReactionCommentGenerator(comment)
-        canUserReactComment = canUserReactSingleCommentFunction(user, comment)
+        canUserReactComment = canUserReactSingleCommentFunction(request, user, comment)
 
         context = {"reactions_single_comment": reactions_single_comment, "canUserReactComment": canUserReactComment,
                    "reaction_types": reaction_types, "item": "comment", "comment": comment}
+
         return render(request, 'base/reactions_changable.html', context)
 
 
@@ -413,7 +415,7 @@ def moreComments(request, nr, postid):
     except:
         messages.info(request, ERR_POSTEXIST_NULL % postid)
         response = HttpResponse()
-        response['HX-Redirect'] = ""
+        response['HX-Redirect'] = "/"
 
         return response
 
@@ -440,7 +442,7 @@ def deleteComment(request, commentid):
     except:
         messages.info(request, ERR_COMEXIST_NULL % commentid)
         response = HttpResponse()
-        response['HX-Redirect'] = ""
+        response['HX-Redirect'] = "/"
 
         return response
 
@@ -467,7 +469,7 @@ def deletePost(request, postid):
     except:
         messages.info(request, ERR_POSTEXIST_NULL % postid)
         response = HttpResponse()
-        response['HX-Redirect'] = ""
+        response['HX-Redirect'] = "/"
 
         return response
 
@@ -480,8 +482,10 @@ def deletePost(request, postid):
     else:
         messages.error(request, ERR_POSTDEL_NOPERM % post.name)
 
+    #TODO Make is so that it will redirect you to the post only if you can see the deleted post
+
     response = HttpResponse()
-    response['HX-Redirect'] = "/post/" + str(post.id) + "/"
+    response['HX-Redirect'] = "/"
 
     return response
 
@@ -493,7 +497,7 @@ def lockPost(request, postid):
     except:
         messages.info(request, ERR_POSTEXIST_NULL % postid)
         response = HttpResponse()
-        response['HX-Redirect'] = ""
+        response['HX-Redirect'] = "/"
 
         return response
 
@@ -516,7 +520,7 @@ def postPining(request, type, postid):
     except:
         messages.info(request, ERR_POSTEXIST_NULL % postid)
         response = HttpResponse()
-        response['HX-Redirect'] = ""
+        response['HX-Redirect'] = "/"
 
         return response
 
@@ -562,7 +566,7 @@ def unlockPost(request, postid):
     except:
         messages.info(request, ERR_POSTEXIST_NULL % postid)
         response = HttpResponse()
-        response['HX-Redirect'] = ""
+        response['HX-Redirect'] = "/"
 
         return response
 

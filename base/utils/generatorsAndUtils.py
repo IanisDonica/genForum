@@ -76,8 +76,8 @@ def canUserReactCommentsGenerator(request, comments):
             canUserReactComment[comment.id] = True
         else:
             try:
-                Reaction.objects.get(comment=comment, user=request.user)
-                canUserReactComment[comment.id] = "reaction_in_place"
+                reaction = Reaction.objects.get(comment=comment, user=request.user)
+                canUserReactComment[comment.id] = reaction
             except:
                 canUserReactComment[comment.id] = False
             
@@ -206,13 +206,6 @@ def canUserDeleteProfilePostsGenerator(request, posts):
 
 
 def reaction_types_gen():
-    reaction_types = []
-    reactions = ReactionTypes.objects.all()
-    for reaction in reactions:
-        reaction_types.append(reaction)
-
-    return reaction_types
-def reaction_types_gen(self):
     reaction_types = []
     reactions = ReactionTypes.objects.all()
     for reaction in reactions:

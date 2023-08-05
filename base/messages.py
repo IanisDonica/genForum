@@ -53,7 +53,7 @@ SUC_REACTADDCOM_ACCEPT = "Reaction added successfully"
 # Displayed when user can't react to the post
 ERR_REACTADDCOM_NOPERM = "You may not react to '%s'"
 # Displayed when user passes backend remove-reaction comment check
-SUC_REACTDELCOM_ACCEPT = "Reaction added successfully"
+SUC_REACTDELCOM_ACCEPT = "Reaction removed successfully"
 # Displayed when user fails backend remove-reaction comment check
 ERR_REACTDELCOM_NOPERM = "You may not react to '%s'"
 # Displayed when a user cannot access more comments, shouldn't happen really

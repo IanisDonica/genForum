@@ -92,19 +92,21 @@
             <p>{{list|length}} - <img class="react-button" src="{{ MEDIA_URL }}{{type.image}}"></p>
         </div>
     {% endfor %}
-    {% if canUserReactPost == True %}
-        {% for reaction_type in reaction_types %}
-            <form hx-post="{% url 'add-reaction' post.id 'post' reaction_type.id %}" hx-target="#reactions_post" class="reactions">
-                {% csrf_token %}                  
-                <input class="react-button" style="background-image: url({{ MEDIA_URL }}{{reaction_type.image}})" type="submit" name="add-reaction-post" value="{{reaction.1}}">
-            </form>
-        {% endfor %}
-    {% elif canUserReactPost == 'reaction_in_place' %}
-    <!--Reaction Controlls when the user can't react-->
-    <form hx-post="{% url 'remove-reaction' post.id 'post' %}" hx-target="#reactions_post">
-        {% csrf_token %}
-        <input type="submit" value="Remove Reaction">
-    </form> 
+    {% if canUserReactPost %}
+        {% if canUserReactPost == True %}
+            {% for reaction_type in reaction_types %}
+                <form hx-post="{% url 'add-reaction' post.id 'post' reaction_type.id %}" hx-target="#reactions_post" class="reactions">
+                    {% csrf_token %}
+                    <input class="react-button" style="background-image: url({{ MEDIA_URL }}{{reaction_type.image}})" type="submit" name="add-reaction-post" value="{{reaction.1}}">
+                </form>
+            {% endfor %}
+        {% else %}
+        <!--Reaction Controlls when the user can't react-->
+        <form hx-post="{% url 'remove-reaction' post.id 'post' %}" hx-target="#reactions_post">
+            {% csrf_token %}
+            <input type="submit" value="Remove Reaction">
+        </form>
+        {% endif %}
     {% endif %}
 </div>
 <div id="comment_pagination">
