@@ -202,14 +202,6 @@ class ReactionTypes(models.Model):
     def __str__(self):
         return self.name
 
-    def reaction_types_gen(self):
-        reaction_types = []
-        reactions = ReactionTypes.objects.all()
-        for reaction in reactions:
-            reaction_types.append(reaction)
-
-        return reaction_types
-
 class Reaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, blank=True)
